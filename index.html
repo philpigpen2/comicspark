@@ -1515,7 +1515,7 @@ async function generatePanel(refine = false) {
     const res = await fetch('/api/generate-panel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: fullPrompt, style: currentBook.style, refined }),
+      body: JSON.stringify({ prompt: fullPrompt, style: currentBook.style, refined, layout: currentPage?.layout }),
     });
     const data = await res.json();
 
