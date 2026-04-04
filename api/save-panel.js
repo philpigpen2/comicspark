@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     // Download image from OpenAI URL
     const imgResponse = await fetch(imageUrl);
     if (!imgResponse.ok) {
-      return res.status(500).json({ error: 'Failed to download image from OpenAI' });
+      return res.status(500).json({ error: `Failed to download image from OpenAI: ${imgResponse.status}` });
     }
     const imageBuffer = await imgResponse.arrayBuffer();
     const imageBytes = new Uint8Array(imageBuffer);
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     if (!uploadResponse.ok) {
       const uploadErr = await uploadResponse.text();
       console.error('Supabase upload error:', uploadErr);
-      return res.status(500).json({ error: 'Failed to upload to Supabase Storage' });
+      return res.status(500).json({ error: 'Failed to upload to Supabase Storage', detail: uploadErr });
     }
 
     // Build the permanent public URL
@@ -64,12 +64,12 @@ export default async function handler(req, res) {
     if (!updateResponse.ok) {
       const updateErr = await updateResponse.text();
       console.error('Supabase update error:', updateErr);
-      return res.status(500).json({ error: 'Failed to update panel record' });
+      return res.status(500).json({ error: 'Failed to update panel record', detail: updateErr });
     }
 
     return res.status(200).json({ permanentUrl });
   } catch (err) {
     console.error('save-panel error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', detail: err.message });
   }
 }
