@@ -731,9 +731,29 @@
   <header class="app-header">
     <span class="logo">ComicSpark</span>
     <div class="header-right">
+      <button class="btn btn-secondary btn-sm" onclick="showCharacterModal()">🧑‍🎨 Characters</button>
       <button class="btn btn-ghost btn-sm" onclick="showScreen('library')">← Library</button>
     </div>
   </header>
+
+  <!-- Characters modal -->
+  <div id="character-modal" class="hidden" style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)">
+    <div style="background:var(--surface);border:3px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:20px 24px;border-bottom:2px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <h3 style="font-size:18px;font-weight:800">🧑‍🎨 Characters</h3>
+        <button onclick="hideCharacterModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">×</button>
+      </div>
+      <div style="padding:16px 24px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border)">
+        Describe each character's appearance. Their descriptions will be added to every panel prompt automatically.
+      </div>
+      <div id="character-list" style="flex:1;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:10px"></div>
+      <div style="padding:16px 24px;border-top:2px solid var(--border);display:flex;flex-direction:column;gap:10px">
+        <input id="char-name" placeholder="Character name (e.g. Maya)" style="font-size:14px" />
+        <textarea id="char-desc" placeholder="Appearance (e.g. teenage girl, red curly hair, green eyes, blue hoodie, white sneakers)" style="min-height:64px;font-size:14px"></textarea>
+        <button class="btn btn-primary" onclick="addCharacter()" style="justify-content:center">Add Character</button>
+      </div>
+    </div>
+  </div>
   <div class="book-editor-layout">
     <!-- Pages sidebar -->
     <div class="pages-sidebar">
@@ -845,6 +865,7 @@ let currentPanelElements = [];
 let pendingElementType = null;
 let pendingElementText = null;
 let dragState = null;
+let currentBookCharacters = [];
 let currentPageLayout = 'strip-3';
 
 const ART_STYLES = [
@@ -1057,7 +1078,66 @@ async function openBook(bookId) {
   showScreen('book');
   document.querySelector('#screen-book .app-header .logo').textContent = 'ComicSpark';
 
-  await loadPages();
+  await Promise.all([loadPages(), loadCharacters()]);
+}
+
+// ═══════════════════════════════════════════════════
+// CHARACTERS
+// ═══════════════════════════════════════════════════
+async function loadCharacters() {
+  const { data } = await sb.from('characters').select('*').eq('book_id', currentBook.id).order('created_at');
+  currentBookCharacters = data || [];
+  renderCharacterList();
+}
+
+function renderCharacterList() {
+  const list = document.getElementById('character-list');
+  if (!list) return;
+  if (currentBookCharacters.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">No characters yet. Add one below.</p>';
+    return;
+  }
+  list.innerHTML = currentBookCharacters.map(c => `
+    <div style="border:2px solid var(--border);border-radius:var(--radius);padding:12px 14px;background:var(--panel);box-shadow:var(--shadow-sm)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">${escHtml(c.name)}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.4">${escHtml(c.description)}</div>
+        </div>
+        <button onclick="deleteCharacter('${c.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;flex-shrink:0;padding:0 2px" title="Delete">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function addCharacter() {
+  const name = document.getElementById('char-name').value.trim();
+  const description = document.getElementById('char-desc').value.trim();
+  if (!name || !description) { toast('Enter a name and description', 'error'); return; }
+
+  const { data, error } = await sb.from('characters').insert({
+    book_id: currentBook.id, name, description,
+  }).select().single();
+  if (error) { toast('Failed to add character', 'error'); return; }
+
+  currentBookCharacters.push(data);
+  renderCharacterList();
+  document.getElementById('char-name').value = '';
+  document.getElementById('char-desc').value = '';
+  toast(`${name} added!`, 'success');
+}
+
+async function deleteCharacter(id) {
+  await sb.from('characters').delete().eq('id', id);
+  currentBookCharacters = currentBookCharacters.filter(c => c.id !== id);
+  renderCharacterList();
+}
+
+function showCharacterModal() {
+  document.getElementById('character-modal').classList.remove('hidden');
+}
+function hideCharacterModal() {
+  document.getElementById('character-modal').classList.add('hidden');
 }
 
 async function loadPages() {
@@ -1256,6 +1336,13 @@ async function generatePanel(refine = false) {
 
   if (!prompt) { toast('Please describe the scene', 'error'); return; }
 
+  // Prepend character descriptions so DALL-E keeps them consistent
+  let fullPrompt = prompt;
+  if (currentBookCharacters.length > 0) {
+    const charBlock = currentBookCharacters.map(c => `${c.name}: ${c.description}`).join('. ');
+    fullPrompt = `Characters in this story — ${charBlock}. Scene: ${prompt}`;
+  }
+
   setLoading('generate-btn', true, '');
   const resultEl = document.getElementById('generate-result');
   resultEl.classList.remove('hidden');
@@ -1265,7 +1352,7 @@ async function generatePanel(refine = false) {
     const res = await fetch('/api/generate-panel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, style: currentBook.style, refined }),
+      body: JSON.stringify({ prompt: fullPrompt, style: currentBook.style, refined }),
     });
     const data = await res.json();
 
