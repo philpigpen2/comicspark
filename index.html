@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComicSpark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #111214;
+      --surface: #1e2025;
+      --panel: #2b2d31;
+      --border: #3a3d44;
+      --accent: #e8407a;
+      --accent-hover: #f0568c;
+      --text: #f2f3f5;
+      --muted: #96989d;
+      --success: #2ea44f;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Utilities ─────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-ghost { background: transparent; color: var(--muted); }
+    .btn-ghost:hover { color: var(--text); background: var(--panel); }
+    .btn-sm { padding: 7px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    input, textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 10px 14px;
+      width: 100%;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+
+    /* ── Screen wrapper ────────────────────────────────── */
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* ── Toast ─────────────────────────────────────────── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .toast {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      font-size: 14px;
+      max-width: 320px;
+      animation: slideIn 0.2s ease;
+    }
+    .toast.error { border-left: 3px solid #ed4245; }
+    .toast.success { border-left: 3px solid var(--success); }
+    @keyframes slideIn { from { transform: translateX(40px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ── Spinner ────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 1 — AUTH
+    ═══════════════════════════════════════════════════ */
+    #screen-auth {
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .auth-logo .logo-icon {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .auth-logo h1 {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .auth-logo p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .auth-tabs {
+      display: flex;
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      color: var(--muted);
+      transition: all 0.15s;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+    }
+    .auth-tab.active { background: var(--panel); color: var(--text); }
+    .auth-fields { display: flex; flex-direction: column; gap: 16px; }
+    .auth-error {
+      background: rgba(237,66,69,0.1);
+      border: 1px solid rgba(237,66,69,0.3);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #ed4245;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 2 — LIBRARY
+    ═══════════════════════════════════════════════════ */
+    #screen-library { flex-direction: column; }
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 60px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .app-header .logo {
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .user-email { font-size: 13px; color: var(--muted); }
+
+    .library-content { padding: 32px 24px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .library-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .library-header h2 { font-size: 22px; font-weight: 700; }
+
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .book-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .book-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .book-cover {
+      height: 180px;
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .book-cover img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+    }
+    .book-info { padding: 14px 16px; }
+    .book-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .style-badge {
+      display: inline-block;
+      background: rgba(232,64,122,0.15);
+      color: var(--accent);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 64px; margin-bottom: 16px; display: block; }
+    .empty-state h3 { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; margin-bottom: 24px; }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 3 — NEW BOOK
+    ═══════════════════════════════════════════════════ */
+    #screen-new-book {
+      flex-direction: column;
+    }
+    .new-book-content {
+      padding: 32px 24px;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .new-book-content h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 28px;
+    }
+    .form-group { margin-bottom: 24px; }
+
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .style-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .style-card:hover { border-color: var(--muted); }
+    .style-card.selected { border-color: var(--accent); background: rgba(232,64,122,0.08); }
+    .style-card .style-emoji { font-size: 32px; margin-bottom: 10px; display: block; }
+    .style-card .style-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .style-card .style-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .form-actions { display: flex; gap: 12px; margin-top: 8px; }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 4 — BOOK EDITOR
+    ═══════════════════════════════════════════════════ */
+    #screen-book {
+      flex-direction: column;
+    }
+    .book-editor-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Pages sidebar */
+    .pages-sidebar {
+      width: 200px;
+      min-width: 200px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .page-thumbs { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .page-thumb {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      aspect-ratio: 3/4;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+    .page-thumb:hover { border-color: var(--muted); }
+    .page-thumb.active { border-color: var(--accent); }
+    .page-thumb-number {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+      position: absolute;
+      top: 4px;
+      left: 6px;
+    }
+    .page-thumb-panels {
+      flex: 1;
+      display: grid;
+      gap: 3px;
+      margin-top: 14px;
+    }
+    .page-thumb-panels.layout-strip-3 { grid-template-rows: repeat(3, 1fr); }
+    .page-thumb-panels.layout-grid-2x2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .page-thumb-panels.layout-splash { grid-template-rows: 1fr; }
+    .page-thumb-panels.layout-duo { grid-template-columns: 1fr 1fr; }
+    .mini-panel {
+      background: var(--bg);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .mini-panel img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Main canvas */
+    .book-canvas {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .book-canvas-header {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .book-canvas-header h2 { font-size: 20px; font-weight: 700; }
+    .layout-picker { display: flex; gap: 8px; align-items: center; }
+    .layout-picker label { margin: 0; font-size: 12px; }
+    .layout-picker select {
+      width: auto;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .page-canvas {
+      background: white;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 700px;
+      aspect-ratio: 2/3;
+      display: grid;
+      gap: 8px;
+      padding: 8px;
+      position: relative;
+    }
+    .page-canvas.layout-strip-3 { grid-template-rows: repeat(3, 1fr); }
+    .page-canvas.layout-grid-2x2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    .page-canvas.layout-splash { grid-template-rows: 1fr; }
+    .page-canvas.layout-duo { grid-template-columns: 1fr 1fr; }
+
+    .panel-slot {
+      background: #e8e8e8;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: outline 0.1s;
+    }
+    .panel-slot:hover { outline: 3px solid var(--accent); }
+    .panel-slot img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .panel-slot .panel-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #aaa;
+      font-size: 12px;
+      font-weight: 500;
+      pointer-events: none;
+    }
+    .panel-slot .panel-placeholder .plus { font-size: 28px; color: #ccc; }
+    .panel-slot .elements-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* empty page */
+    .no-pages {
+      text-align: center;
+      padding: 60px;
+      color: var(--muted);
+    }
+    .no-pages .empty-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+
+    /* ═══════════════════════════════════════════════════
+       SCREEN 5 — PANEL EDITOR
+    ═══════════════════════════════════════════════════ */
+    #screen-panel {
+      flex-direction: column;
+    }
+    .panel-editor-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Panel image area */
+    .panel-image-area {
+      flex: 1;
+      background: #0a0a0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel-image-wrapper {
+      position: relative;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    #panel-img {
+      display: block;
+      max-width: min(600px, 100%);
+      max-height: calc(100vh - 120px);
+      border-radius: 4px;
+    }
+    .panel-placeholder-large {
+      width: 500px;
+      max-width: 90vw;
+      aspect-ratio: 1;
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+      border: 2px dashed var(--border);
+    }
+    .panel-placeholder-large .ph-icon { font-size: 64px; }
+    .panel-placeholder-large p { font-size: 14px; }
+
+    #panel-svg-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      pointer-events: none;
+    }
+    #panel-svg-overlay.placing { pointer-events: all; }
+
+    /* Panel controls sidebar */
+    .panel-controls {
+      width: 320px;
+      min-width: 320px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .panel-controls-inner { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+    .panel-section { display: flex; flex-direction: column; gap: 10px; }
+    .panel-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .generate-result {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .generate-result strong { color: var(--text); font-size: 11px; display: block; margin-bottom: 4px; }
+
+    .element-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+    .element-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .element-input-row input { flex: 1; }
+
+    .elements-list { display: flex; flex-direction: column; gap: 8px; }
+    .element-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .element-item-info { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .element-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .type-speech { background: rgba(88,166,255,0.15); color: #58a6ff; }
+    .type-caption { background: rgba(255,211,61,0.15); color: #ffd33d; }
+    .type-sfx { background: rgba(232,64,122,0.15); color: var(--accent); }
+    .delete-element-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .delete-element-btn:hover { color: #ed4245; background: rgba(237,66,69,0.1); }
+
+    .placing-hint {
+      background: rgba(232,64,122,0.1);
+      border: 1px solid rgba(232,64,122,0.3);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 700px) {
+      .pages-sidebar { width: 120px; min-width: 120px; }
+      .panel-controls { width: 100%; min-width: unset; }
+      .panel-editor-layout { flex-direction: column; }
+      .panel-image-area { min-height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Toast container ─────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 1 — AUTH
+═══════════════════════════════════════════════════ -->
+<div id="screen-auth" class="screen active">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-icon">📚⚡</span>
+      <h1>ComicSpark</h1>
+      <p>Create stunning graphic novels with AI</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log in</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign up</button>
+    </div>
+    <div class="auth-fields">
+      <div id="auth-error" class="auth-error hidden"></div>
+      <div class="form-group" style="margin:0">
+        <label>Email</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="••••••••" />
+      </div>
+      <button class="btn btn-primary" id="auth-btn" onclick="handleAuth()" style="width:100%;justify-content:center;margin-top:4px">
+        Log in
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 2 — LIBRARY
+═══════════════════════════════════════════════════ -->
+<div id="screen-library" class="screen">
+  <header class="app-header">
+    <span class="logo">ComicSpark</span>
+    <div class="header-right">
+      <span class="user-email" id="header-email"></span>
+      <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+  <div class="library-content">
+    <div class="library-header">
+      <h2>My Books</h2>
+      <button class="btn btn-primary" onclick="showScreen('new-book')">+ New Book</button>
+    </div>
+    <div id="books-grid" class="books-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 3 — NEW BOOK
+═══════════════════════════════════════════════════ -->
+<div id="screen-new-book" class="screen">
+  <header class="app-header">
+    <span class="logo">ComicSpark</span>
+    <div class="header-right">
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('library')">← Back</button>
+    </div>
+  </header>
+  <div class="new-book-content">
+    <h2>Create a New Book</h2>
+    <div class="form-group">
+      <label>Book Title</label>
+      <input type="text" id="new-book-title" placeholder="e.g. The Iron Phantom" maxlength="80" />
+    </div>
+    <div class="form-group">
+      <label>Art Style</label>
+      <div class="style-grid" id="style-grid"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="showScreen('library')">Cancel</button>
+      <button class="btn btn-primary" id="create-book-btn" onclick="createBook()">Create Book</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 4 — BOOK EDITOR
+═══════════════════════════════════════════════════ -->
+<div id="screen-book" class="screen">
+  <header class="app-header">
+    <span class="logo">ComicSpark</span>
+    <div class="header-right">
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('library')">← Library</button>
+    </div>
+  </header>
+  <div class="book-editor-layout">
+    <!-- Pages sidebar -->
+    <div class="pages-sidebar">
+      <div class="sidebar-header">
+        Pages
+        <button class="btn btn-primary btn-sm" onclick="addPage()" title="Add page">+</button>
+      </div>
+      <div class="page-thumbs" id="page-thumbs"></div>
+    </div>
+    <!-- Main canvas -->
+    <div class="book-canvas" id="book-canvas">
+      <div class="no-pages" id="no-pages-msg">
+        <span class="empty-icon">📄</span>
+        <p>Add your first page to get started</p>
+        <button class="btn btn-primary" onclick="addPage()" style="margin-top:12px">+ Add Page</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 5 — PANEL EDITOR
+═══════════════════════════════════════════════════ -->
+<div id="screen-panel" class="screen">
+  <header class="app-header">
+    <span class="logo">ComicSpark</span>
+    <div class="header-right">
+      <button class="btn btn-ghost btn-sm" onclick="backToBook()">← Book</button>
+    </div>
+  </header>
+  <div class="panel-editor-layout">
+    <!-- Image area -->
+    <div class="panel-image-area">
+      <div class="panel-image-wrapper" id="panel-image-wrapper">
+        <div class="panel-placeholder-large" id="panel-placeholder">
+          <span class="ph-icon">🎨</span>
+          <p>Generate artwork using the panel controls</p>
+        </div>
+        <img id="panel-img" class="hidden" alt="Panel artwork" />
+        <svg id="panel-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+
+    <!-- Controls sidebar -->
+    <div class="panel-controls">
+      <div class="panel-controls-inner">
+
+        <!-- Generate section -->
+        <div class="panel-section">
+          <div class="panel-section-title">Generate Artwork</div>
+          <label>Describe the scene</label>
+          <textarea id="panel-prompt" placeholder="A hero stands atop a skyscraper at sunset, cape flowing in the wind..."></textarea>
+          <button class="btn btn-primary" id="generate-btn" onclick="generatePanel()">
+            ⚡ Generate
+          </button>
+          <div id="generate-result" class="generate-result hidden"></div>
+          <div id="refine-row" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+            <label>Refine prompt</label>
+            <textarea id="refine-prompt" placeholder="Make it more dramatic, add rain..."></textarea>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-secondary" style="flex:1;justify-content:center" onclick="generatePanel(true)">🔄 Refine</button>
+              <button class="btn btn-primary" style="flex:1;justify-content:center" id="save-btn" onclick="savePanel()">✓ Save</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Elements section -->
+        <div class="panel-section">
+          <div class="panel-section-title">Add Text Elements</div>
+          <div class="element-buttons">
+            <button class="btn btn-secondary btn-sm" onclick="startAddElement('speech')">💬 Speech Bubble</button>
+            <button class="btn btn-secondary btn-sm" onclick="startAddElement('caption')">📝 Caption</button>
+            <button class="btn btn-secondary btn-sm" onclick="startAddElement('sfx')">💥 Sound Effect</button>
+          </div>
+          <div id="element-input-area" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+            <div class="element-input-row">
+              <input type="text" id="element-text-input" placeholder="Type text..." />
+              <button class="btn btn-secondary btn-sm" onclick="cancelAddElement()">✕</button>
+            </div>
+            <div class="placing-hint">Click on the panel image to place the element</div>
+          </div>
+          <div id="elements-list" class="elements-list"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Scripts ──────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+const SUPABASE_URL = 'https://tiuaptctdhbcopidfzni.supabase.co';
+const SUPABASE_ANON_KEY = 'SUPABASE_ANON_KEY'; // Replace with your anon key from Supabase Dashboard → Settings → API
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let currentUser = null;
+let currentBook = null;
+let currentPage = null;
+let currentPanel = null;
+let currentPanelElements = [];
+let pendingElementType = null;
+let pendingElementText = null;
+let currentPageLayout = 'strip-3';
+
+const ART_STYLES = [
+  { id: 'manga',   emoji: '⛩️',  name: 'Manga',          desc: 'Black & white, Japanese comic style with expressive characters' },
+  { id: 'western', emoji: '🦸',  name: 'Western Comic',   desc: 'Bold colours, dynamic action, Marvel/DC aesthetic' },
+  { id: 'watercolour', emoji: '🎨', name: 'Watercolour',  desc: 'Soft, painterly washes with dreamy atmospheric colours' },
+  { id: 'noir',    emoji: '🕵️',  name: 'Noir',            desc: 'Dark, moody shadows and high-contrast film noir atmosphere' },
+  { id: 'cartoon', emoji: '✨',  name: 'Cartoon',          desc: 'Bright, fun animated style with thick outlines' },
+  { id: 'realistic', emoji: '📷', name: 'Realistic',      desc: 'Photorealistic illustration with cinematic lighting' },
+];
+
+const LAYOUTS = [
+  { id: 'strip-3',  label: 'Strip (3 panels)' },
+  { id: 'grid-2x2', label: 'Grid (2×2)' },
+  { id: 'splash',   label: 'Full Page Splash' },
+  { id: 'duo',      label: 'Duo (2 side by side)' },
+];
+
+const LAYOUT_PANEL_COUNT = { 'strip-3': 3, 'grid-2x2': 4, 'splash': 1, 'duo': 2 };
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function setLoading(btnId, loading, label) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="spinner"></span>' : label;
+}
+
+// ═══════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════
+let authMode = 'login';
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Log in' : 'Create Account';
+  document.getElementById('auth-error').classList.add('hidden');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.classList.add('hidden');
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  setLoading('auth-btn', true, '');
+  let result;
+  if (authMode === 'login') {
+    result = await sb.auth.signInWithPassword({ email, password });
+  } else {
+    result = await sb.auth.signUp({ email, password });
+  }
+  setLoading('auth-btn', false, authMode === 'login' ? 'Log in' : 'Create Account');
+
+  if (result.error) {
+    errEl.textContent = result.error.message;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  if (authMode === 'signup' && !result.data.session) {
+    errEl.style.cssText = 'color:#2ea44f;background:rgba(46,164,79,0.1);border-color:rgba(46,164,79,0.3)';
+    errEl.textContent = 'Check your email to confirm your account, then log in.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  currentUser = result.data.user;
+  onSignedIn();
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null;
+  currentBook = null;
+  currentPage = null;
+  showScreen('auth');
+}
+
+function onSignedIn() {
+  document.getElementById('header-email').textContent = currentUser.email;
+  showScreen('library');
+  loadBooks();
+}
+
+// ═══════════════════════════════════════════════════
+// LIBRARY
+// ═══════════════════════════════════════════════════
+async function loadBooks() {
+  const grid = document.getElementById('books-grid');
+  grid.innerHTML = '<div style="color:var(--muted);font-size:14px">Loading...</div>';
+
+  const { data: books, error } = await sb.from('books').select('*').order('created_at', { ascending: false });
+
+  if (error) { toast('Failed to load books: ' + error.message, 'error'); return; }
+
+  if (!books.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <span class="empty-icon">📚</span>
+        <h3>No books yet</h3>
+        <p>Create your first graphic novel to get started</p>
+        <button class="btn btn-primary" onclick="showScreen('new-book')">+ New Book</button>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = books.map(book => `
+    <div class="book-card" onclick="openBook('${book.id}')">
+      <div class="book-cover">
+        ${book.cover_image_url ? `<img src="${escHtml(book.cover_image_url)}" alt="" />` : '📚'}
+      </div>
+      <div class="book-info">
+        <div class="book-title">${escHtml(book.title)}</div>
+        <span class="style-badge">${escHtml(book.style)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════
+// NEW BOOK
+// ═══════════════════════════════════════════════════
+let selectedStyle = null;
+
+function renderStyleGrid() {
+  const grid = document.getElementById('style-grid');
+  grid.innerHTML = ART_STYLES.map(s => `
+    <div class="style-card" id="style-${s.id}" onclick="selectStyle('${s.id}')">
+      <span class="style-emoji">${s.emoji}</span>
+      <div class="style-name">${s.name}</div>
+      <div class="style-desc">${s.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectStyle(id) {
+  selectedStyle = id;
+  document.querySelectorAll('.style-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('style-' + id).classList.add('selected');
+}
+
+async function createBook() {
+  const title = document.getElementById('new-book-title').value.trim();
+  if (!title) { toast('Please enter a book title', 'error'); return; }
+  if (!selectedStyle) { toast('Please select an art style', 'error'); return; }
+
+  setLoading('create-book-btn', true, '');
+  const { data, error } = await sb.from('books').insert({
+    title,
+    style: selectedStyle,
+    user_id: currentUser.id,
+  }).select().single();
+  setLoading('create-book-btn', false, 'Create Book');
+
+  if (error) { toast('Failed to create book: ' + error.message, 'error'); return; }
+
+  toast('Book created!', 'success');
+  document.getElementById('new-book-title').value = '';
+  selectedStyle = null;
+  document.querySelectorAll('.style-card').forEach(el => el.classList.remove('selected'));
+  openBook(data.id);
+}
+
+// ═══════════════════════════════════════════════════
+// BOOK EDITOR
+// ═══════════════════════════════════════════════════
+async function openBook(bookId) {
+  const { data: book, error } = await sb.from('books').select('*').eq('id', bookId).single();
+  if (error) { toast('Failed to load book', 'error'); return; }
+  currentBook = book;
+
+  showScreen('book');
+  document.querySelector('#screen-book .app-header .logo').textContent = 'ComicSpark';
+
+  await loadPages();
+}
+
+async function loadPages() {
+  const { data: pages, error } = await sb.from('pages').select('*, panels(*)').eq('book_id', currentBook.id).order('page_number');
+  if (error) { toast('Failed to load pages', 'error'); return; }
+
+  renderPageSidebar(pages);
+
+  if (pages.length === 0) {
+    document.getElementById('no-pages-msg').classList.remove('hidden');
+    clearCanvas();
+    return;
+  }
+  document.getElementById('no-pages-msg').classList.add('hidden');
+  openPage(pages[0]);
+}
+
+function renderPageSidebar(pages) {
+  const container = document.getElementById('page-thumbs');
+  container.innerHTML = pages.map((p, i) => `
+    <div class="page-thumb ${currentPage && currentPage.id === p.id ? 'active' : ''}" onclick="openPageById('${p.id}')" id="thumb-${p.id}">
+      <span class="page-thumb-number">${i + 1}</span>
+      <div class="page-thumb-panels layout-${p.layout}">
+        ${(p.panels || []).slice(0, LAYOUT_PANEL_COUNT[p.layout] || 3).map(panel =>
+          `<div class="mini-panel">${panel.image_url ? `<img src="${escHtml(panel.image_url)}" alt="" />` : ''}</div>`
+        ).join('')}
+        ${Array.from({length: Math.max(0, (LAYOUT_PANEL_COUNT[p.layout] || 3) - (p.panels || []).length)}).map(() =>
+          `<div class="mini-panel"></div>`
+        ).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function openPageById(pageId) {
+  const { data: page, error } = await sb.from('pages').select('*, panels(*)').eq('id', pageId).single();
+  if (error) { toast('Failed to load page', 'error'); return; }
+  openPage(page);
+}
+
+function openPage(page) {
+  currentPage = page;
+  currentPageLayout = page.layout;
+
+  // Update sidebar active state
+  document.querySelectorAll('.page-thumb').forEach(el => el.classList.remove('active'));
+  const thumb = document.getElementById('thumb-' + page.id);
+  if (thumb) thumb.classList.add('active');
+
+  renderPageCanvas(page);
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById('book-canvas');
+  const existing = canvas.querySelector('.page-canvas-wrapper');
+  if (existing) existing.remove();
+}
+
+function renderPageCanvas(page) {
+  const canvas = document.getElementById('book-canvas');
+
+  // Remove old canvas wrapper if exists
+  const old = canvas.querySelector('.page-canvas-wrapper');
+  if (old) old.remove();
+
+  const panelCount = LAYOUT_PANEL_COUNT[page.layout] || 3;
+  const panels = page.panels || [];
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'page-canvas-wrapper';
+  wrapper.style.width = '100%';
+  wrapper.style.maxWidth = '700px';
+
+  // Header row
+  const hdr = document.createElement('div');
+  hdr.className = 'book-canvas-header';
+  hdr.innerHTML = `
+    <h2>${escHtml(currentBook.title)} — Page ${page.page_number}</h2>
+    <div class="layout-picker">
+      <label>Layout:</label>
+      <select onchange="changeLayout(this.value)">
+        ${LAYOUTS.map(l => `<option value="${l.id}" ${l.id === page.layout ? 'selected' : ''}>${l.label}</option>`).join('')}
+      </select>
+    </div>
+  `;
+  wrapper.appendChild(hdr);
+
+  // Page canvas
+  const pc = document.createElement('div');
+  pc.className = `page-canvas layout-${page.layout}`;
+  pc.id = 'page-canvas-el';
+
+  for (let i = 0; i < panelCount; i++) {
+    const panel = panels.find(p => p.position === i);
+    const slot = document.createElement('div');
+    slot.className = 'panel-slot';
+    slot.onclick = () => openPanel(panel, i);
+
+    if (panel && panel.image_url) {
+      const img = document.createElement('img');
+      img.src = panel.image_url;
+      img.alt = 'Panel ' + (i + 1);
+      slot.appendChild(img);
+    } else {
+      slot.innerHTML = `<div class="panel-placeholder"><span class="plus">+</span><span>Click to edit</span></div>`;
+    }
+
+    pc.appendChild(slot);
+  }
+
+  wrapper.appendChild(pc);
+  canvas.insertBefore(wrapper, document.getElementById('no-pages-msg'));
+}
+
+async function changeLayout(layout) {
+  if (!currentPage) return;
+  const { error } = await sb.from('pages').update({ layout }).eq('id', currentPage.id);
+  if (error) { toast('Failed to update layout', 'error'); return; }
+  currentPage.layout = layout;
+  currentPageLayout = layout;
+  await loadPages();
+  openPageById(currentPage.id);
+}
+
+async function addPage() {
+  if (!currentBook) return;
+
+  const { data: pages } = await sb.from('pages').select('page_number').eq('book_id', currentBook.id).order('page_number', { ascending: false }).limit(1);
+  const nextNum = (pages && pages.length > 0) ? pages[0].page_number + 1 : 1;
+
+  const { data: page, error } = await sb.from('pages').insert({
+    book_id: currentBook.id,
+    page_number: nextNum,
+    layout: 'strip-3',
+  }).select().single();
+
+  if (error) { toast('Failed to add page', 'error'); return; }
+
+  toast('Page ' + nextNum + ' added', 'success');
+  await loadPages();
+  openPageById(page.id);
+}
+
+// ═══════════════════════════════════════════════════
+// PANEL EDITOR
+// ═══════════════════════════════════════════════════
+async function openPanel(panel, position) {
+  // Ensure panel record exists
+  if (!panel) {
+    const { data: newPanel, error } = await sb.from('panels').insert({
+      page_id: currentPage.id,
+      position,
+    }).select().single();
+    if (error) { toast('Failed to create panel', 'error'); return; }
+    panel = newPanel;
+  }
+  currentPanel = panel;
+
+  showScreen('panel');
+  resetPanelEditor();
+  await loadPanelElements();
+
+  if (panel.image_url) {
+    showPanelImage(panel.image_url);
+    if (panel.prompt) document.getElementById('panel-prompt').value = panel.prompt;
+    document.getElementById('refine-row').style.display = 'flex';
+    document.getElementById('generate-result').classList.remove('hidden');
+    document.getElementById('generate-result').innerHTML = `<strong>Current prompt:</strong>${escHtml(panel.prompt || '')}`;
+  }
+}
+
+function resetPanelEditor() {
+  document.getElementById('panel-img').classList.add('hidden');
+  document.getElementById('panel-placeholder').classList.remove('hidden');
+  document.getElementById('generate-result').classList.add('hidden');
+  document.getElementById('refine-row').style.display = 'none';
+  document.getElementById('panel-prompt').value = '';
+  document.getElementById('element-input-area').style.display = 'none';
+  document.getElementById('element-input-area').classList.add('hidden');
+  pendingElementType = null;
+  pendingElementText = null;
+  document.getElementById('panel-svg-overlay').classList.remove('placing');
+  renderElements();
+}
+
+function showPanelImage(url) {
+  const img = document.getElementById('panel-img');
+  img.src = url;
+  img.classList.remove('hidden');
+  document.getElementById('panel-placeholder').classList.add('hidden');
+}
+
+async function generatePanel(refine = false) {
+  const prompt = document.getElementById('panel-prompt').value.trim();
+  const refined = refine ? document.getElementById('refine-prompt').value.trim() : null;
+
+  if (!prompt) { toast('Please describe the scene', 'error'); return; }
+
+  setLoading('generate-btn', true, '');
+  const resultEl = document.getElementById('generate-result');
+  resultEl.classList.remove('hidden');
+  resultEl.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.15);border-top-color:var(--accent)"></span> Generating artwork...';
+
+  try {
+    const res = await fetch('/api/generate-panel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, style: currentBook.style, refined }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+    showPanelImage(data.imageUrl);
+    resultEl.innerHTML = `<strong>DALL-E revised prompt:</strong>${escHtml(data.revisedPrompt || prompt)}`;
+
+    document.getElementById('refine-row').style.display = 'flex';
+
+    // Update panel prompt in DB
+    await sb.from('panels').update({ prompt }).eq('id', currentPanel.id);
+    currentPanel.prompt = prompt;
+    currentPanel._tempImageUrl = data.imageUrl;
+
+  } catch (err) {
+    toast(err.message, 'error');
+    resultEl.innerHTML = '<span style="color:#ed4245">' + escHtml(err.message) + '</span>';
+  }
+
+  setLoading('generate-btn', false, '⚡ Generate');
+}
+
+async function savePanel() {
+  if (!currentPanel._tempImageUrl) { toast('Generate an image first', 'error'); return; }
+
+  setLoading('save-btn', true, '');
+  try {
+    const res = await fetch('/api/save-panel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageUrl: currentPanel._tempImageUrl,
+        panelId: currentPanel.id,
+        bookId: currentBook.id,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+
+    currentPanel.image_url = data.permanentUrl;
+    showPanelImage(data.permanentUrl);
+    toast('Panel saved!', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+  setLoading('save-btn', false, '✓ Save');
+}
+
+function backToBook() {
+  showScreen('book');
+  loadPages(); // refresh thumbnails
+}
+
+// ═══════════════════════════════════════════════════
+// ELEMENTS
+// ═══════════════════════════════════════════════════
+async function loadPanelElements() {
+  const { data, error } = await sb.from('elements').select('*').eq('panel_id', currentPanel.id);
+  if (error) return;
+  currentPanelElements = data || [];
+  renderElements();
+}
+
+function renderElements() {
+  // Sidebar list
+  const list = document.getElementById('elements-list');
+  list.innerHTML = currentPanelElements.map((el, i) => `
+    <div class="element-item">
+      <div class="element-item-info">
+        <span class="element-type-badge type-${el.type}">${el.type}</span>
+        <span>${escHtml(el.text.slice(0, 30))}${el.text.length > 30 ? '…' : ''}</span>
+      </div>
+      <button class="delete-element-btn" onclick="deleteElement('${el.id}')">×</button>
+    </div>
+  `).join('');
+
+  // SVG overlay
+  renderSvgElements();
+}
+
+function renderSvgElements() {
+  const svg = document.getElementById('panel-svg-overlay');
+  // Clear existing drawn elements (keep only defs if any)
+  Array.from(svg.children).forEach(child => {
+    if (child.tagName !== 'defs') child.remove();
+  });
+
+  currentPanelElements.forEach(el => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const cx = el.x * 100;
+    const cy = el.y * 100;
+    const w = el.width * 100;
+
+    if (el.type === 'speech') {
+      renderSpeechBubble(svg, g, cx, cy, w, el.text);
+    } else if (el.type === 'caption') {
+      renderCaption(svg, g, cx, cy, w, el.text);
+    } else if (el.type === 'sfx') {
+      renderSfx(svg, g, cx, cy, el.text);
+    }
+    svg.appendChild(g);
+  });
+}
+
+function renderSpeechBubble(svg, g, cx, cy, w, text) {
+  const rx = cx - w / 2;
+  const ry = cy - 8;
+  const h = 14;
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', rx); rect.setAttribute('y', ry);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', 3); rect.setAttribute('ry', 3);
+  rect.setAttribute('fill', 'white');
+  rect.setAttribute('stroke', '#333');
+  rect.setAttribute('stroke-width', '0.5');
+
+  // Tail
+  const tail = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  tail.setAttribute('points', `${cx - 2},${ry + h} ${cx + 2},${ry + h} ${cx},${ry + h + 5}`);
+  tail.setAttribute('fill', 'white');
+  tail.setAttribute('stroke', '#333');
+  tail.setAttribute('stroke-width', '0.5');
+
+  const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  textEl.setAttribute('x', cx); textEl.setAttribute('y', ry + h / 2 + 2);
+  textEl.setAttribute('text-anchor', 'middle');
+  textEl.setAttribute('dominant-baseline', 'middle');
+  textEl.setAttribute('font-size', '4');
+  textEl.setAttribute('fill', '#111');
+  textEl.setAttribute('font-family', 'Inter, sans-serif');
+  textEl.setAttribute('font-weight', '600');
+  textEl.textContent = text;
+
+  g.appendChild(tail);
+  g.appendChild(rect);
+  g.appendChild(textEl);
+}
+
+function renderCaption(svg, g, cx, cy, w, text) {
+  const rx = cx - w / 2;
+  const h = 10;
+  const ry = cy - h / 2;
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', rx); rect.setAttribute('y', ry);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('fill', 'rgba(0,0,0,0.75)');
+  rect.setAttribute('rx', 1);
+
+  const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  textEl.setAttribute('x', cx); textEl.setAttribute('y', cy);
+  textEl.setAttribute('text-anchor', 'middle');
+  textEl.setAttribute('dominant-baseline', 'middle');
+  textEl.setAttribute('font-size', '3.5');
+  textEl.setAttribute('fill', 'white');
+  textEl.setAttribute('font-family', 'Inter, sans-serif');
+  textEl.textContent = text;
+
+  g.appendChild(rect);
+  g.appendChild(textEl);
+}
+
+function renderSfx(svg, g, cx, cy, text) {
+  const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  textEl.setAttribute('x', cx); textEl.setAttribute('y', cy);
+  textEl.setAttribute('text-anchor', 'middle');
+  textEl.setAttribute('dominant-baseline', 'middle');
+  textEl.setAttribute('font-size', '10');
+  textEl.setAttribute('fill', '#e8407a');
+  textEl.setAttribute('font-family', 'Inter, sans-serif');
+  textEl.setAttribute('font-weight', '900');
+  textEl.setAttribute('stroke', 'white');
+  textEl.setAttribute('stroke-width', '0.8');
+  textEl.setAttribute('paint-order', 'stroke');
+  textEl.style.textShadow = '0 0 8px rgba(0,0,0,0.8)';
+  textEl.textContent = text.toUpperCase();
+  g.appendChild(textEl);
+}
+
+function startAddElement(type) {
+  pendingElementType = type;
+  const inputArea = document.getElementById('element-input-area');
+  inputArea.classList.remove('hidden');
+  inputArea.style.display = 'flex';
+  document.getElementById('element-text-input').value = '';
+  document.getElementById('element-text-input').placeholder =
+    type === 'speech' ? 'e.g. "Wait — that's impossible!"' :
+    type === 'caption' ? 'e.g. "Meanwhile, in the city..."' :
+    'e.g. BOOM! or CRASH!';
+  document.getElementById('element-text-input').focus();
+}
+
+function cancelAddElement() {
+  pendingElementType = null;
+  pendingElementText = null;
+  const inputArea = document.getElementById('element-input-area');
+  inputArea.classList.add('hidden');
+  inputArea.style.display = 'none';
+  document.getElementById('panel-svg-overlay').classList.remove('placing');
+}
+
+document.getElementById('element-text-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmElementText();
+});
+
+function confirmElementText() {
+  const text = document.getElementById('element-text-input').value.trim();
+  if (!text) { toast('Please enter some text', 'error'); return; }
+  pendingElementText = text;
+
+  // Enable click-to-place on the SVG overlay
+  const svg = document.getElementById('panel-svg-overlay');
+  svg.classList.add('placing');
+
+  const hint = document.querySelector('.placing-hint');
+  if (hint) hint.style.fontWeight = '700';
+
+  toast('Now click on the panel to place your ' + pendingElementType, 'info');
+}
+
+document.getElementById('element-text-input').addEventListener('change', () => {
+  // Auto-arm when they finish typing (if they click elsewhere)
+});
+
+// Click on SVG to place element
+document.getElementById('panel-svg-overlay').addEventListener('click', async (e) => {
+  if (!pendingElementType || !pendingElementText) {
+    // Try to arm from current input
+    const text = document.getElementById('element-text-input').value.trim();
+    if (!text || !pendingElementType) return;
+    pendingElementText = text;
+  }
+
+  const svg = e.currentTarget;
+  if (!svg.classList.contains('placing')) return;
+
+  const rect = svg.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+
+  const { data, error } = await sb.from('elements').insert({
+    panel_id: currentPanel.id,
+    type: pendingElementType,
+    text: pendingElementText,
+    x, y,
+    width: 0.3,
+  }).select().single();
+
+  if (error) { toast('Failed to place element', 'error'); return; }
+
+  currentPanelElements.push(data);
+  renderElements();
+  cancelAddElement();
+  toast('Element placed!', 'success');
+});
+
+// Arm on Enter key
+document.getElementById('element-text-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const text = e.target.value.trim();
+    if (text && pendingElementType) {
+      pendingElementText = text;
+      document.getElementById('panel-svg-overlay').classList.add('placing');
+      toast('Click on the panel to place', 'info');
+    }
+  }
+});
+
+async function deleteElement(id) {
+  const { error } = await sb.from('elements').delete().eq('id', id);
+  if (error) { toast('Failed to delete element', 'error'); return; }
+  currentPanelElements = currentPanelElements.filter(el => el.id !== id);
+  renderElements();
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+renderStyleGrid();
+
+// Check session on load
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    onSignedIn();
+  }
+})();
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    showScreen('auth');
+  }
+});
+</script>
+</body>
+</html>
