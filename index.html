@@ -649,7 +649,7 @@
 <div id="screen-auth" class="screen active">
   <div class="auth-card">
     <div class="auth-logo">
-      <span class="logo-icon">🦸⚡</span>
+      <span class="logo-icon">💥🦸</span>
       <h1>ComicSpark</h1>
     </div>
     <div id="auth-mode-banner" style="text-align:center;margin-bottom:24px;padding:12px 16px;background:rgba(232,64,122,0.12);border:1px solid rgba(232,64,122,0.3);border-radius:var(--radius);">
@@ -832,7 +832,7 @@
   <header class="app-header">
     <span class="logo">ComicSpark</span>
     <div class="header-right">
-      <button class="btn btn-ghost btn-sm" onclick="backToBook()">← Book</button>
+      <button class="btn btn-ghost btn-sm" id="back-to-book-btn" onclick="backToBook()">← Book</button>
     </div>
   </header>
   <div class="panel-editor-layout">
@@ -1046,7 +1046,7 @@ async function loadBooks() {
   if (!books.length) {
     grid.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1">
-        <span class="empty-icon">📚</span>
+        <span class="empty-icon">💥</span>
         <h3>No books yet</h3>
         <p>Create your first graphic novel to get started</p>
         <button class="btn btn-primary" onclick="showScreen('new-book')">+ New Book</button>
@@ -1057,7 +1057,7 @@ async function loadBooks() {
   grid.innerHTML = books.map(book => `
     <div class="book-card" onclick="openBook('${book.id}')">
       <div class="book-cover">
-        ${book.cover_image_url ? `<img src="${escHtml(book.cover_image_url)}" alt="" />` : '📚'}
+        ${book.cover_image_url ? `<img src="${escHtml(book.cover_image_url)}" alt="" />` : '💥'}
       </div>
       <div class="book-info">
         <div class="book-title">${escHtml(book.title)}</div>
@@ -1443,6 +1443,8 @@ async function generatePanel(refine = false) {
   }
 
   setLoading('generate-btn', true, '');
+  const backBtn = document.getElementById('back-to-book-btn');
+  if (backBtn) { backBtn.disabled = true; backBtn.textContent = '⏳ Saving...'; }
   const resultEl = document.getElementById('generate-result');
   resultEl.classList.remove('hidden');
   resultEl.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.15);border-top-color:var(--accent)"></span> Generating artwork...';
@@ -1477,6 +1479,7 @@ async function generatePanel(refine = false) {
   }
 
   setLoading('generate-btn', false, '⚡ Generate');
+  if (backBtn) { backBtn.disabled = false; backBtn.textContent = '← Book'; }
 }
 
 async function savePanel() {
