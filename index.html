@@ -812,7 +812,23 @@
         Pages
         <button class="btn btn-primary btn-sm" onclick="addPage()" title="Add page">+</button>
       </div>
+      <!-- Front cover slot -->
+      <div style="padding:8px 12px 4px">
+        <div id="front-cover-thumb" onclick="openOrCreateCover('front')" style="cursor:pointer;border:2px dashed var(--border);border-radius:var(--radius);aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted);background:var(--bg);overflow:hidden;position:relative">
+          <span style="font-size:18px">🎨</span>Front Cover
+        </div>
+        <p style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;margin-top:4px;font-weight:700">Front</p>
+      </div>
+      <div style="margin:4px 12px;border-top:2px solid var(--border)"></div>
       <div class="page-thumbs" id="page-thumbs"></div>
+      <div style="margin:4px 12px;border-top:2px solid var(--border)"></div>
+      <!-- Back cover slot -->
+      <div style="padding:4px 12px 12px">
+        <p style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);text-align:center;margin-bottom:4px;font-weight:700">Back</p>
+        <div id="back-cover-thumb" onclick="openOrCreateCover('back')" style="cursor:pointer;border:2px dashed var(--border);border-radius:var(--radius);aspect-ratio:3/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;font-weight:700;color:var(--muted);background:var(--bg);overflow:hidden;position:relative">
+          <span style="font-size:18px">🎨</span>Back Cover
+        </div>
+      </div>
     </div>
     <!-- Main canvas -->
     <div class="book-canvas" id="book-canvas">
@@ -1240,9 +1256,15 @@ function hideCharacterModal() {
 }
 
 async function loadPages() {
-  const { data: pages, error } = await sb.from('pages').select('*, panels(*)').eq('book_id', currentBook.id).order('page_number');
+  const { data: allPages, error } = await sb.from('pages').select('*, panels(*)').eq('book_id', currentBook.id).order('page_number');
   if (error) { toast('Failed to load pages', 'error'); return; }
 
+  const pages = allPages.filter(p => !p.cover_type);
+  const frontCover = allPages.find(p => p.cover_type === 'front');
+  const backCover  = allPages.find(p => p.cover_type === 'back');
+
+  renderCoverThumb('front-cover-thumb', frontCover, 'front');
+  renderCoverThumb('back-cover-thumb',  backCover,  'back');
   renderPageSidebar(pages);
 
   if (pages.length === 0) {
@@ -1252,6 +1274,45 @@ async function loadPages() {
   }
   document.getElementById('no-pages-msg').classList.add('hidden');
   openPage(pages[0]);
+}
+
+function renderCoverThumb(elId, page, type) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const panel = page && page.panels && page.panels[0];
+  const imageUrl = panel && panel.image_url;
+  const label = type === 'front' ? 'Front Cover' : 'Back Cover';
+  if (imageUrl) {
+    el.innerHTML = `<img src="${escHtml(imageUrl)}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0" />`;
+    el.style.border = currentPage && currentPage.id === page.id ? '2px solid var(--accent)' : '2px solid var(--border)';
+  } else {
+    el.innerHTML = `<span style="font-size:18px">🎨</span>${label}`;
+    el.style.border = '2px dashed var(--border)';
+  }
+}
+
+async function openOrCreateCover(type) {
+  // Look for existing cover page
+  const { data: existing } = await sb.from('pages').select('*, panels(*)').eq('book_id', currentBook.id).eq('cover_type', type).maybeSingle();
+
+  if (existing) {
+    openPage(existing);
+    renderCoverThumb(type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb', existing, type);
+    return;
+  }
+
+  // Create new cover page (always splash layout, page_number 0 for front, 9999 for back)
+  const pageNum = type === 'front' ? 0 : 9999;
+  const { data: newPage, error } = await sb.from('pages').insert({
+    book_id: currentBook.id,
+    page_number: pageNum,
+    layout: 'splash',
+    cover_type: type,
+  }).select('*, panels(*)').single();
+
+  if (error) { toast('Failed to create cover', 'error'); return; }
+  openPage(newPage);
+  renderCoverThumb(type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb', newPage, type);
 }
 
 function renderPageSidebar(pages) {
@@ -1313,14 +1374,15 @@ function renderPageCanvas(page) {
   // Header row
   const hdr = document.createElement('div');
   hdr.className = 'book-canvas-header';
+  const coverLabel = page.cover_type === 'front' ? 'Front Cover' : page.cover_type === 'back' ? 'Back Cover' : null;
   hdr.innerHTML = `
-    <h2>${escHtml(currentBook.title)} — Page ${page.page_number}</h2>
-    <div class="layout-picker">
+    <h2>${escHtml(currentBook.title)} — ${coverLabel || `Page ${page.page_number}`}</h2>
+    ${coverLabel ? '' : `<div class="layout-picker">
       <label>Layout:</label>
       <select onchange="changeLayout(this.value)">
         ${LAYOUTS.map(l => `<option value="${l.id}" ${l.id === page.layout ? 'selected' : ''}>${l.label}</option>`).join('')}
       </select>
-    </div>
+    </div>`}
   `;
   wrapper.appendChild(hdr);
 
@@ -1503,9 +1565,15 @@ async function savePanel() {
   }
 }
 
-function backToBook() {
+async function backToBook() {
   showScreen('book');
-  loadPages(); // refresh thumbnails
+  await loadPages(); // refresh thumbnails including covers
+  // Re-highlight active cover thumb if we were on a cover
+  if (currentPage && currentPage.cover_type) {
+    const elId = currentPage.cover_type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb';
+    const { data: refreshed } = await sb.from('pages').select('*, panels(*)').eq('id', currentPage.id).single();
+    if (refreshed) renderCoverThumb(elId, refreshed, currentPage.cover_type);
+  }
 }
 
 // ═══════════════════════════════════════════════════
