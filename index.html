@@ -1378,38 +1378,81 @@ function renderSvgElements() {
   });
 }
 
+function wrapSvgText(text, maxChars) {
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for (const word of words) {
+    const test = cur ? cur + ' ' + word : word;
+    if (test.length <= maxChars) { cur = test; }
+    else { if (cur) lines.push(cur); cur = word; }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
 function renderSpeechBubble(svg, g, cx, cy, w, text) {
-  const rx = cx - w / 2;
-  const ry = cy - 8;
-  const h = 14;
+  const fontSize = 4;
+  const lineH = 5.5;
+  const maxChars = Math.max(8, Math.round(w / 2.6));
+  const lines = wrapSvgText(text, maxChars);
 
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', rx); rect.setAttribute('y', ry);
-  rect.setAttribute('width', w); rect.setAttribute('height', h);
-  rect.setAttribute('rx', 3); rect.setAttribute('ry', 3);
-  rect.setAttribute('fill', 'white');
-  rect.setAttribute('stroke', '#333');
-  rect.setAttribute('stroke-width', '0.5');
+  const padX = 5;
+  const padY = 3.5;
+  const bw = Math.max(w, lines.reduce((m, l) => Math.max(m, l.length * 2.4 + padX * 2), 0));
+  const bh = lines.length * lineH + padY * 2;
+  const cr = 3; // corner radius
 
-  // Tail
-  const tail = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-  tail.setAttribute('points', `${cx - 2},${ry + h} ${cx + 2},${ry + h} ${cx},${ry + h + 5}`);
-  tail.setAttribute('fill', 'white');
-  tail.setAttribute('stroke', '#333');
-  tail.setAttribute('stroke-width', '0.5');
+  const rx = cx - bw / 2;
+  const ry = cy - bh / 2;
+
+  // Tail: comes from bottom of bubble, pointing down-left
+  const tailBX = rx + bw * 0.28;
+  const tailBW = 3.5;
+  const tailTX = rx + bw * 0.1;
+  const tailTY = ry + bh + 10;
+
+  const pathD = [
+    `M ${rx + cr},${ry}`,
+    `H ${rx + bw - cr}`,
+    `Q ${rx + bw},${ry} ${rx + bw},${ry + cr}`,
+    `V ${ry + bh - cr}`,
+    `Q ${rx + bw},${ry + bh} ${rx + bw - cr},${ry + bh}`,
+    `H ${tailBX + tailBW}`,
+    `L ${tailTX},${tailTY}`,
+    `L ${tailBX - tailBW},${ry + bh}`,
+    `H ${rx + cr}`,
+    `Q ${rx},${ry + bh} ${rx},${ry + bh - cr}`,
+    `V ${ry + cr}`,
+    `Q ${rx},${ry} ${rx + cr},${ry}`,
+    `Z`,
+  ].join(' ');
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', pathD);
+  path.setAttribute('fill', 'white');
+  path.setAttribute('stroke', '#1a1a1a');
+  path.setAttribute('stroke-width', '1.2');
+  path.setAttribute('stroke-linejoin', 'round');
+  g.appendChild(path);
 
   const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  textEl.setAttribute('x', cx); textEl.setAttribute('y', ry + h / 2 + 2);
   textEl.setAttribute('text-anchor', 'middle');
-  textEl.setAttribute('dominant-baseline', 'middle');
-  textEl.setAttribute('font-size', '4');
+  textEl.setAttribute('font-size', fontSize);
   textEl.setAttribute('fill', '#111');
   textEl.setAttribute('font-family', 'Inter, sans-serif');
-  textEl.setAttribute('font-weight', '600');
-  textEl.textContent = text;
+  textEl.setAttribute('font-weight', '700');
 
-  g.appendChild(tail);
-  g.appendChild(rect);
+  const startY = cy - ((lines.length - 1) * lineH) / 2;
+  lines.forEach((line, i) => {
+    const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    tspan.setAttribute('x', cx);
+    tspan.setAttribute('y', startY + i * lineH);
+    tspan.setAttribute('dominant-baseline', 'middle');
+    tspan.textContent = line;
+    textEl.appendChild(tspan);
+  });
+
   g.appendChild(textEl);
 }
 
@@ -1442,14 +1485,13 @@ function renderSfx(svg, g, cx, cy, text) {
   textEl.setAttribute('x', cx); textEl.setAttribute('y', cy);
   textEl.setAttribute('text-anchor', 'middle');
   textEl.setAttribute('dominant-baseline', 'middle');
-  textEl.setAttribute('font-size', '10');
-  textEl.setAttribute('fill', '#e8407a');
-  textEl.setAttribute('font-family', 'Inter, sans-serif');
-  textEl.setAttribute('font-weight', '900');
-  textEl.setAttribute('stroke', 'white');
-  textEl.setAttribute('stroke-width', '0.8');
+  textEl.setAttribute('font-size', '12');
+  textEl.setAttribute('fill', '#e8192c');
+  textEl.setAttribute('font-family', 'Bangers, cursive');
+  textEl.setAttribute('letter-spacing', '1.5');
+  textEl.setAttribute('stroke', '#1a1a1a');
+  textEl.setAttribute('stroke-width', '1');
   textEl.setAttribute('paint-order', 'stroke');
-  textEl.style.textShadow = '0 0 8px rgba(0,0,0,0.8)';
   textEl.textContent = text.toUpperCase();
   g.appendChild(textEl);
 }
