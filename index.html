@@ -813,10 +813,7 @@
           <div id="refine-row" class="hidden" style="display:flex;flex-direction:column;gap:8px">
             <label>Refine prompt</label>
             <textarea id="refine-prompt" placeholder="Make it more dramatic, add rain..."></textarea>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-secondary" style="flex:1;justify-content:center" onclick="generatePanel(true)">🔄 Refine</button>
-              <button class="btn btn-primary" style="flex:1;justify-content:center" id="save-btn" onclick="savePanel()">✓ Save</button>
-            </div>
+            <button class="btn btn-secondary" style="justify-content:center" onclick="generatePanel(true)">🔄 Regenerate</button>
           </div>
         </div>
 
@@ -1359,7 +1356,7 @@ async function generatePanel(refine = false) {
     if (!res.ok) throw new Error(data.error || 'Generation failed');
 
     showPanelImage(data.imageUrl);
-    resultEl.innerHTML = `<strong>DALL-E revised prompt:</strong>${escHtml(data.revisedPrompt || prompt)}`;
+    resultEl.innerHTML = '<span class="spinner" style="border-color:rgba(0,0,0,0.15);border-top-color:var(--accent)"></span> Saving...';
 
     document.getElementById('refine-row').style.display = 'flex';
 
@@ -1368,18 +1365,20 @@ async function generatePanel(refine = false) {
     currentPanel.prompt = prompt;
     currentPanel._tempImageUrl = data.imageUrl;
 
+    // Auto-save image to storage
+    await savePanel();
+    resultEl.innerHTML = `<strong>Saved.</strong> ${escHtml(data.revisedPrompt || prompt)}`;
+
   } catch (err) {
     toast(err.message, 'error');
-    resultEl.innerHTML = '<span style="color:#ed4245">' + escHtml(err.message) + '</span>';
+    resultEl.innerHTML = '<span style="color:var(--accent)">' + escHtml(err.message) + '</span>';
   }
 
   setLoading('generate-btn', false, '⚡ Generate');
 }
 
 async function savePanel() {
-  if (!currentPanel._tempImageUrl) { toast('Generate an image first', 'error'); return; }
-
-  setLoading('save-btn', true, '');
+  if (!currentPanel._tempImageUrl) return;
   try {
     const res = await fetch('/api/save-panel', {
       method: 'POST',
@@ -1392,14 +1391,11 @@ async function savePanel() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed');
-
     currentPanel.image_url = data.permanentUrl;
     showPanelImage(data.permanentUrl);
-    toast('Panel saved!', 'success');
   } catch (err) {
-    toast(err.message, 'error');
+    toast('Auto-save failed: ' + err.message, 'error');
   }
-  setLoading('save-btn', false, '✓ Save');
 }
 
 function backToBook() {
