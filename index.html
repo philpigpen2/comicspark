@@ -630,7 +630,10 @@
     <div class="auth-logo">
       <span class="logo-icon">📚⚡</span>
       <h1>ComicSpark</h1>
-      <p>Create stunning graphic novels with AI</p>
+    </div>
+    <div id="auth-mode-banner" style="text-align:center;margin-bottom:24px;padding:12px 16px;background:rgba(232,64,122,0.12);border:1px solid rgba(232,64,122,0.3);border-radius:var(--radius);">
+      <p id="auth-mode-title" style="font-size:16px;font-weight:700;color:var(--accent);margin:0">Welcome back</p>
+      <p id="auth-mode-sub" style="font-size:13px;color:var(--muted);margin:4px 0 0">Sign in to your account to continue</p>
     </div>
     <div id="auth-error" class="auth-error hidden"></div>
     <div class="auth-fields">
@@ -870,9 +873,15 @@ let authMode = 'login';
 
 function switchAuthTab(mode) {
   authMode = mode;
-  document.getElementById('auth-btn').textContent = mode === 'login' ? 'Log in' : 'Create Account';
-  document.getElementById('auth-toggle-btn').textContent = mode === 'login' ? 'Sign up' : 'Log in';
-  document.getElementById('auth-toggle-text').textContent = mode === 'login' ? "Don't have an account?" : 'Already have an account?';
+  const isLogin = mode === 'login';
+  document.getElementById('auth-btn').textContent = isLogin ? 'Log in' : 'Create Account';
+  document.getElementById('auth-toggle-btn').textContent = isLogin ? 'Sign up' : 'Log in';
+  document.getElementById('auth-toggle-text').textContent = isLogin ? "Don't have an account?" : 'Already have an account?';
+  document.getElementById('auth-mode-title').textContent = isLogin ? 'Welcome back' : 'Create your account';
+  document.getElementById('auth-mode-sub').textContent = isLogin ? 'Sign in to your account to continue' : 'Start building your first graphic novel';
+  document.getElementById('auth-mode-banner').style.background = isLogin ? 'rgba(232,64,122,0.12)' : 'rgba(88,101,242,0.12)';
+  document.getElementById('auth-mode-banner').style.borderColor = isLogin ? 'rgba(232,64,122,0.3)' : 'rgba(88,101,242,0.3)';
+  document.getElementById('auth-mode-title').style.color = isLogin ? 'var(--accent)' : '#818cf8';
   document.getElementById('auth-error').classList.add('hidden');
 }
 
