@@ -743,14 +743,65 @@
         <h3 style="font-size:18px;font-weight:800">🧑‍🎨 Characters</h3>
         <button onclick="hideCharacterModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">×</button>
       </div>
-      <div style="padding:16px 24px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--border)">
-        Describe each character's appearance. Their descriptions will be added to every panel prompt automatically.
-      </div>
       <div id="character-list" style="flex:1;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:10px"></div>
-      <div style="padding:16px 24px;border-top:2px solid var(--border);display:flex;flex-direction:column;gap:10px">
+
+      <!-- Step 1: name entry -->
+      <div id="char-step-1" style="padding:16px 24px;border-top:2px solid var(--border);display:flex;flex-direction:column;gap:10px">
+        <p style="font-size:13px;color:var(--muted)">Add a character and we'll help you design them.</p>
         <input id="char-name" placeholder="Character name (e.g. Maya)" style="font-size:14px" />
-        <textarea id="char-desc" placeholder="Appearance (e.g. teenage girl, red curly hair, green eyes, blue hoodie, white sneakers)" style="min-height:64px;font-size:14px"></textarea>
-        <button class="btn btn-primary" onclick="addCharacter()" style="justify-content:center">Add Character</button>
+        <button class="btn btn-primary" onclick="startCharacterDesign()" style="justify-content:center">Design Character →</button>
+      </div>
+
+      <!-- Step 2: guided questionnaire -->
+      <div id="char-step-2" class="hidden" style="padding:16px 24px;border-top:2px solid var(--border);display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:380px">
+        <p style="font-size:13px;font-weight:700" id="char-design-heading"></p>
+
+        <div>
+          <label style="font-size:12px">Age</label>
+          <input id="char-age" placeholder="e.g. 17" type="number" min="1" max="100" style="font-size:14px" />
+        </div>
+        <div>
+          <label style="font-size:12px">Gender</label>
+          <select id="char-gender" style="font-size:14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:10px 14px;width:100%;font-family:inherit;box-shadow:var(--shadow-sm)">
+            <option value="">Select...</option>
+            <option>boy</option><option>girl</option><option>man</option><option>woman</option><option>person</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px">Build</label>
+          <select id="char-build" style="font-size:14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:10px 14px;width:100%;font-family:inherit;box-shadow:var(--shadow-sm)">
+            <option value="">Select...</option>
+            <option>slim</option><option>athletic</option><option>average</option><option>stocky</option><option>tall and lean</option><option>short and stocky</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px">Hair colour &amp; style</label>
+          <input id="char-hair" placeholder="e.g. long curly red hair" style="font-size:14px" />
+        </div>
+        <div>
+          <label style="font-size:12px">Eye colour</label>
+          <input id="char-eyes" placeholder="e.g. bright green eyes" style="font-size:14px" />
+        </div>
+        <div>
+          <label style="font-size:12px">Skin tone</label>
+          <input id="char-skin" placeholder="e.g. light brown skin, pale skin, dark skin" style="font-size:14px" />
+        </div>
+        <div>
+          <label style="font-size:12px">Signature outfit</label>
+          <input id="char-outfit" placeholder="e.g. blue denim jacket, jeans, white sneakers" style="font-size:14px" />
+        </div>
+        <div>
+          <label style="font-size:12px">Distinctive features (optional)</label>
+          <input id="char-features" placeholder="e.g. scar on left cheek, always wears glasses" style="font-size:14px" />
+        </div>
+
+        <div id="char-preview" class="hidden" style="background:var(--panel);border:2px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;line-height:1.5;color:var(--text)"></div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="previewCharacter()" style="flex:1;justify-content:center">Preview</button>
+          <button class="btn btn-primary" onclick="addCharacter()" style="flex:1;justify-content:center">Save Character</button>
+        </div>
+        <button onclick="cancelCharacterDesign()" style="background:none;border:none;font-size:13px;color:var(--muted);cursor:pointer;text-align:center">← Back</button>
       </div>
     </div>
   </div>
@@ -1107,10 +1158,61 @@ function renderCharacterList() {
   `).join('');
 }
 
+function startCharacterDesign() {
+  const name = document.getElementById('char-name').value.trim();
+  if (!name) { toast('Enter a name first', 'error'); return; }
+  document.getElementById('char-design-heading').textContent = `Designing: ${name}`;
+  document.getElementById('char-step-1').classList.add('hidden');
+  document.getElementById('char-step-2').classList.remove('hidden');
+  document.getElementById('char-preview').classList.add('hidden');
+  // Clear fields
+  ['char-age','char-hair','char-eyes','char-skin','char-outfit','char-features'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('char-gender').value = '';
+  document.getElementById('char-build').value = '';
+}
+
+function cancelCharacterDesign() {
+  document.getElementById('char-step-2').classList.add('hidden');
+  document.getElementById('char-step-1').classList.remove('hidden');
+}
+
+function buildDescription() {
+  const age     = document.getElementById('char-age').value.trim();
+  const gender  = document.getElementById('char-gender').value;
+  const build   = document.getElementById('char-build').value;
+  const hair    = document.getElementById('char-hair').value.trim();
+  const eyes    = document.getElementById('char-eyes').value.trim();
+  const skin    = document.getElementById('char-skin').value.trim();
+  const outfit  = document.getElementById('char-outfit').value.trim();
+  const features = document.getElementById('char-features').value.trim();
+
+  const parts = [];
+  if (age && gender) parts.push(`${age}-year-old ${gender}`);
+  else if (gender)   parts.push(gender);
+  if (build)         parts.push(`${build} build`);
+  if (hair)          parts.push(hair);
+  if (eyes)          parts.push(eyes);
+  if (skin)          parts.push(skin);
+  if (outfit)        parts.push(`always wears ${outfit}`);
+  if (features)      parts.push(features);
+  return parts.join(', ');
+}
+
+function previewCharacter() {
+  const desc = buildDescription();
+  if (!desc) { toast('Fill in at least a few fields', 'error'); return; }
+  const preview = document.getElementById('char-preview');
+  preview.textContent = desc;
+  preview.classList.remove('hidden');
+}
+
 async function addCharacter() {
   const name = document.getElementById('char-name').value.trim();
-  const description = document.getElementById('char-desc').value.trim();
-  if (!name || !description) { toast('Enter a name and description', 'error'); return; }
+  const description = buildDescription();
+  if (!name) { toast('Enter a character name', 'error'); return; }
+  if (!description) { toast('Fill in at least a few fields to describe the character', 'error'); return; }
 
   const { data, error } = await sb.from('characters').insert({
     book_id: currentBook.id, name, description,
@@ -1120,7 +1222,7 @@ async function addCharacter() {
   currentBookCharacters.push(data);
   renderCharacterList();
   document.getElementById('char-name').value = '';
-  document.getElementById('char-desc').value = '';
+  cancelCharacterDesign();
   toast(`${name} added!`, 'success');
 }
 
