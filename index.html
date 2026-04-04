@@ -642,12 +642,12 @@
         <label>Password</label>
         <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password" />
       </div>
-      <button class="btn btn-primary" id="auth-btn" style="width:100%;justify-content:center;margin-top:4px">
+      <button class="btn btn-primary" id="auth-btn" onclick="handleAuth()" style="width:100%;justify-content:center;margin-top:4px">
         Log in
       </button>
       <p style="text-align:center;margin-top:12px;font-size:14px;color:var(--muted)">
         <span id="auth-toggle-text">Don't have an account?</span>
-        <button id="auth-toggle-btn" style="background:none;border:none;color:var(--accent);font-weight:600;cursor:pointer;font-size:14px;padding:0 4px;font-family:inherit">Sign up</button>
+        <button id="auth-toggle-btn" onclick="switchAuthTab(authMode==='login'?'signup':'login')" style="background:none;border:none;color:var(--accent);font-weight:600;cursor:pointer;font-size:14px;padding:0 4px;font-family:inherit">Sign up</button>
       </p>
     </div>
   </div>
@@ -876,10 +876,6 @@ function switchAuthTab(mode) {
   document.getElementById('auth-error').classList.add('hidden');
 }
 
-document.getElementById('auth-btn').addEventListener('click', handleAuth);
-document.getElementById('auth-toggle-btn').addEventListener('click', function() {
-  switchAuthTab(authMode === 'login' ? 'signup' : 'login');
-});
 document.getElementById('auth-password').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') handleAuth();
 });
