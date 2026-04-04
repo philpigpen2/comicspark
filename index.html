@@ -876,14 +876,12 @@ function switchAuthTab(mode) {
   document.getElementById('auth-error').classList.add('hidden');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('auth-btn').addEventListener('click', handleAuth);
-  document.getElementById('auth-toggle-btn').addEventListener('click', function() {
-    switchAuthTab(authMode === 'login' ? 'signup' : 'login');
-  });
-  document.getElementById('auth-password').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') handleAuth();
-  });
+document.getElementById('auth-btn').addEventListener('click', handleAuth);
+document.getElementById('auth-toggle-btn').addEventListener('click', function() {
+  switchAuthTab(authMode === 'login' ? 'signup' : 'login');
+});
+document.getElementById('auth-password').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleAuth();
 });
 
 async function handleAuth() {
