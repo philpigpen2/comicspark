@@ -1,0 +1,58 @@
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { prompt, style, refined } = req.body;
+
+  if (!prompt || !style) {
+    return res.status(400).json({ error: 'prompt and style are required' });
+  }
+
+  const styleDescriptions = {
+    manga: 'black and white manga style, Japanese comic art, clean line art, screentone shading, expressive characters',
+    western: 'Western comic book style, bold colours, dynamic action lines, Marvel/DC aesthetic, cel shaded, vivid ink outlines',
+    watercolour: 'soft watercolour illustration, painterly washes, gentle blending, dreamy atmospheric colours, loose brushwork',
+    noir: 'film noir style, dark moody shadows, high contrast black and white, chiaroscuro lighting, gritty urban atmosphere',
+    cartoon: 'bright cartoon style, fun animated aesthetic, thick outlines, saturated cheerful colours, Cartoon Network inspired',
+    realistic: 'photorealistic illustration, detailed rendering, cinematic lighting, highly detailed, professional concept art',
+  };
+
+  const stylePrompt = styleDescriptions[style] || style;
+
+  const fullPrompt = refined
+    ? `${refined}. Art style: ${stylePrompt}. Comic book panel composition, single panel, no text, no speech bubbles, no captions.`
+    : `${prompt}. Art style: ${stylePrompt}. Comic book panel composition, single panel, no text, no speech bubbles, no captions.`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: fullPrompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard',
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error('OpenAI error:', err);
+      return res.status(500).json({ error: err.error?.message || 'OpenAI request failed' });
+    }
+
+    const data = await response.json();
+    const imageUrl = data.data[0].url;
+    const revisedPrompt = data.data[0].revised_prompt;
+
+    return res.status(200).json({ imageUrl, revisedPrompt });
+  } catch (err) {
+    console.error('generate-panel error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
