@@ -18,20 +18,20 @@ export default async function handler(req, res) {
     realistic: 'photorealistic illustration, detailed rendering, cinematic lighting, highly detailed, professional concept art',
   };
 
-  // Map page layout to best DALL-E image size
-  const sizeMap = {
-    'splash': '1024x1792',   // full-page portrait (covers + splash pages)
-    'strip-3': '1792x1024',  // wide landscape (horizontal strip panels)
-    'grid-2x2': '1024x1024', // square grid panels
-    'duo': '1024x1024',      // side-by-side square panels
-  };
-  const size = sizeMap[layout] || '1024x1024';
-
   const stylePrompt = styleDescriptions[style] || style;
 
   const fullPrompt = refined
     ? `${refined}. Art style: ${stylePrompt}. Comic book panel composition, single panel, no text, no speech bubbles, no captions.`
     : `${prompt}. Art style: ${stylePrompt}. Comic book panel composition, single panel, no text, no speech bubbles, no captions.`;
+
+  // Map page layout to the correct DALL-E image size
+  const sizeMap = {
+    'splash':   '1024x1792', // tall portrait — full-page splash
+    'strip-3':  '1792x1024', // wide landscape — 3-panel strip
+    'grid-2x2': '1024x1024', // square — 2x2 grid
+    'duo':      '1024x1024', // square — side-by-side duo
+  };
+  const size = sizeMap[layout] || '1024x1024';
 
   try {
     const response = await fetch('https://api.openai.com/v1/images/generations', {
