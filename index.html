@@ -757,42 +757,28 @@
         <p style="font-size:13px;font-weight:700" id="char-design-heading"></p>
 
         <div>
-          <label style="font-size:12px">Age</label>
-          <input id="char-age" placeholder="e.g. 17" type="number" min="1" max="100" style="font-size:14px" />
+          <label style="font-size:12px">What kind of character is this?</label>
+          <input id="char-kind" placeholder="e.g. teenage boy, talking cat, alien, ancient rock, robot, dragon" style="font-size:14px" />
         </div>
         <div>
-          <label style="font-size:12px">Gender</label>
-          <select id="char-gender" style="font-size:14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:10px 14px;width:100%;font-family:inherit;box-shadow:var(--shadow-sm)">
-            <option value="">Select...</option>
-            <option>boy</option><option>girl</option><option>man</option><option>woman</option><option>person</option>
-          </select>
+          <label style="font-size:12px">Size &amp; shape</label>
+          <input id="char-build" placeholder="e.g. small and round, tall and lanky, massive and hulking, tiny" style="font-size:14px" />
         </div>
         <div>
-          <label style="font-size:12px">Build</label>
-          <select id="char-build" style="font-size:14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:10px 14px;width:100%;font-family:inherit;box-shadow:var(--shadow-sm)">
-            <option value="">Select...</option>
-            <option>slim</option><option>athletic</option><option>average</option><option>stocky</option><option>tall and lean</option><option>short and stocky</option>
-          </select>
+          <label style="font-size:12px">Colours</label>
+          <input id="char-hair" placeholder="e.g. bright orange fur, grey stone with green moss, blue scales, red hoodie" style="font-size:14px" />
         </div>
         <div>
-          <label style="font-size:12px">Hair colour &amp; style</label>
-          <input id="char-hair" placeholder="e.g. long curly red hair" style="font-size:14px" />
+          <label style="font-size:12px">Eyes &amp; face</label>
+          <input id="char-eyes" placeholder="e.g. big yellow eyes, no face just a crack smile, glowing red pupils" style="font-size:14px" />
         </div>
         <div>
-          <label style="font-size:12px">Eye colour</label>
-          <input id="char-eyes" placeholder="e.g. bright green eyes" style="font-size:14px" />
+          <label style="font-size:12px">What they wear or carry (if anything)</label>
+          <input id="char-outfit" placeholder="e.g. tiny top hat, battle armour, nothing — they're a rock" style="font-size:14px" />
         </div>
         <div>
-          <label style="font-size:12px">Skin tone</label>
-          <input id="char-skin" placeholder="e.g. light brown skin, pale skin, dark skin" style="font-size:14px" />
-        </div>
-        <div>
-          <label style="font-size:12px">Signature outfit</label>
-          <input id="char-outfit" placeholder="e.g. blue denim jacket, jeans, white sneakers" style="font-size:14px" />
-        </div>
-        <div>
-          <label style="font-size:12px">Distinctive features (optional)</label>
-          <input id="char-features" placeholder="e.g. scar on left cheek, always wears glasses" style="font-size:14px" />
+          <label style="font-size:12px">Anything else distinctive</label>
+          <input id="char-features" placeholder="e.g. always has a lit cigarette, missing left arm, trails sparks when moving" style="font-size:14px" />
         </div>
 
         <div id="char-preview" class="hidden" style="background:var(--panel);border:2px solid var(--border);border-radius:var(--radius);padding:12px;font-size:12px;line-height:1.5;color:var(--text)"></div>
@@ -1182,11 +1168,9 @@ function startCharacterDesign() {
   document.getElementById('char-step-2').classList.remove('hidden');
   document.getElementById('char-preview').classList.add('hidden');
   // Clear fields
-  ['char-age','char-hair','char-eyes','char-skin','char-outfit','char-features'].forEach(id => {
+  ['char-kind','char-build','char-hair','char-eyes','char-outfit','char-features'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  document.getElementById('char-gender').value = '';
-  document.getElementById('char-build').value = '';
 }
 
 function cancelCharacterDesign() {
@@ -1195,24 +1179,20 @@ function cancelCharacterDesign() {
 }
 
 function buildDescription() {
-  const age     = document.getElementById('char-age').value.trim();
-  const gender  = document.getElementById('char-gender').value;
-  const build   = document.getElementById('char-build').value;
-  const hair    = document.getElementById('char-hair').value.trim();
-  const eyes    = document.getElementById('char-eyes').value.trim();
-  const skin    = document.getElementById('char-skin').value.trim();
-  const outfit  = document.getElementById('char-outfit').value.trim();
+  const kind     = document.getElementById('char-kind').value.trim();
+  const build    = document.getElementById('char-build').value.trim();
+  const colours  = document.getElementById('char-hair').value.trim();
+  const eyes     = document.getElementById('char-eyes').value.trim();
+  const outfit   = document.getElementById('char-outfit').value.trim();
   const features = document.getElementById('char-features').value.trim();
 
   const parts = [];
-  if (age && gender) parts.push(`${age}-year-old ${gender}`);
-  else if (gender)   parts.push(gender);
-  if (build)         parts.push(`${build} build`);
-  if (hair)          parts.push(hair);
-  if (eyes)          parts.push(eyes);
-  if (skin)          parts.push(skin);
-  if (outfit)        parts.push(`always wears ${outfit}`);
-  if (features)      parts.push(features);
+  if (kind)     parts.push(kind);
+  if (build)    parts.push(build);
+  if (colours)  parts.push(colours);
+  if (eyes)     parts.push(eyes);
+  if (outfit)   parts.push(outfit);
+  if (features) parts.push(features);
   return parts.join(', ');
 }
 
@@ -1256,12 +1236,23 @@ function hideCharacterModal() {
 }
 
 async function loadPages() {
-  const { data: allPages, error } = await sb.from('pages').select('*, panels(*)').eq('book_id', currentBook.id).order('page_number');
+  const { data: allPages, error } = await sb.from('pages').select('*').eq('book_id', currentBook.id).order('page_number');
   if (error) { toast('Failed to load pages', 'error'); return; }
 
-  const pages = allPages.filter(p => !p.cover_type);
-  const frontCover = allPages.find(p => p.cover_type === 'front');
-  const backCover  = allPages.find(p => p.cover_type === 'back');
+  // Fetch panels separately — more reliable than embedded FK query
+  const pageIds = allPages.map(p => p.id);
+  const { data: allPanels } = pageIds.length > 0
+    ? await sb.from('panels').select('*').in('page_id', pageIds)
+    : { data: [] };
+
+  const pagesWithPanels = allPages.map(p => ({
+    ...p,
+    panels: (allPanels || []).filter(panel => panel.page_id === p.id),
+  }));
+
+  const pages = pagesWithPanels.filter(p => !p.cover_type);
+  const frontCover = pagesWithPanels.find(p => p.cover_type === 'front');
+  const backCover  = pagesWithPanels.find(p => p.cover_type === 'back');
 
   renderCoverThumb('front-cover-thumb', frontCover, 'front');
   renderCoverThumb('back-cover-thumb',  backCover,  'back');
@@ -1296,8 +1287,10 @@ async function openOrCreateCover(type) {
   const { data: existing } = await sb.from('pages').select('*, panels(*)').eq('book_id', currentBook.id).eq('cover_type', type).maybeSingle();
 
   if (existing) {
-    openPage(existing);
-    renderCoverThumb(type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb', existing, type);
+    const { data: panels } = await sb.from('panels').select('*').eq('page_id', existing.id);
+    const full = { ...existing, panels: panels || [] };
+    openPage(full);
+    renderCoverThumb(type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb', full, type);
     return;
   }
 
@@ -1308,11 +1301,12 @@ async function openOrCreateCover(type) {
     page_number: pageNum,
     layout: 'splash',
     cover_type: type,
-  }).select('*, panels(*)').single();
+  }).select('*').single();
 
   if (error) { toast('Failed to create cover', 'error'); return; }
-  openPage(newPage);
-  renderCoverThumb(type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb', newPage, type);
+  const full = { ...newPage, panels: [] };
+  openPage(full);
+  renderCoverThumb(type === 'front' ? 'front-cover-thumb' : 'back-cover-thumb', full, type);
 }
 
 function renderPageSidebar(pages) {
@@ -1333,9 +1327,10 @@ function renderPageSidebar(pages) {
 }
 
 async function openPageById(pageId) {
-  const { data: page, error } = await sb.from('pages').select('*, panels(*)').eq('id', pageId).single();
+  const { data: page, error } = await sb.from('pages').select('*').eq('id', pageId).single();
   if (error) { toast('Failed to load page', 'error'); return; }
-  openPage(page);
+  const { data: panels } = await sb.from('panels').select('*').eq('page_id', pageId);
+  openPage({ ...page, panels: panels || [] });
 }
 
 function openPage(page) {
