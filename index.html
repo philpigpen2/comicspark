@@ -1522,6 +1522,9 @@ async function openPanel(panel, position) {
 function resetPanelEditor() {
   document.getElementById('panel-img').classList.add('hidden');
   document.getElementById('panel-placeholder').classList.remove('hidden');
+  // Match placeholder aspect ratio to the page layout
+  const ratioMap = { 'splash': '9/16', 'strip-3': '16/9', 'grid-2x2': '1/1', 'duo': '1/1' };
+  document.getElementById('panel-placeholder').style.aspectRatio = ratioMap[currentPage?.layout] || '1/1';
   document.getElementById('generate-result').classList.add('hidden');
   document.getElementById('refine-row').style.display = 'none';
   document.getElementById('panel-prompt').value = '';
@@ -1762,24 +1765,39 @@ function renderSpeechBubble(svg, g, cx, cy, w, text) {
 }
 
 function renderCaption(svg, g, cx, cy, w, text) {
-  const rx = cx - w / 2;
-  const h = 10;
-  const ry = cy - h / 2;
+  const lines = wrapSvgText(text, Math.floor(w / 2.2));
+  const lineH = 4.5;
+  const padX = 4, padY = 3;
+  const boxW = w;
+  const boxH = lines.length * lineH + padY * 2;
+  const rx = cx - boxW / 2;
+  const ry = cy - boxH / 2;
 
+  // Yellow caption box with black border
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   rect.setAttribute('x', rx); rect.setAttribute('y', ry);
-  rect.setAttribute('width', w); rect.setAttribute('height', h);
-  rect.setAttribute('fill', 'rgba(0,0,0,0.75)');
-  rect.setAttribute('rx', 1);
+  rect.setAttribute('width', boxW); rect.setAttribute('height', boxH);
+  rect.setAttribute('fill', '#ffd000');
+  rect.setAttribute('stroke', '#1a1a1a');
+  rect.setAttribute('stroke-width', '1');
+  rect.setAttribute('rx', '1.5');
 
   const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  textEl.setAttribute('x', cx); textEl.setAttribute('y', cy);
   textEl.setAttribute('text-anchor', 'middle');
-  textEl.setAttribute('dominant-baseline', 'middle');
   textEl.setAttribute('font-size', '3.5');
-  textEl.setAttribute('fill', 'white');
+  textEl.setAttribute('fill', '#1a1a1a');
   textEl.setAttribute('font-family', 'Inter, sans-serif');
-  textEl.textContent = text;
+  textEl.setAttribute('font-weight', '600');
+
+  const startY = ry + padY + lineH / 2;
+  lines.forEach((line, i) => {
+    const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    tspan.setAttribute('x', cx);
+    tspan.setAttribute('y', startY + i * lineH);
+    tspan.setAttribute('dominant-baseline', 'middle');
+    tspan.textContent = line;
+    textEl.appendChild(tspan);
+  });
 
   g.appendChild(rect);
   g.appendChild(textEl);
