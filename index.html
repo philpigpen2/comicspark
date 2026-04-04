@@ -730,6 +730,10 @@
 <div id="screen-book" class="screen">
   <header class="app-header">
     <span class="logo">ComicSpark</span>
+    <div style="flex:1;display:flex;justify-content:center">
+      <span id="book-title-display" onclick="startEditBookTitle()" title="Click to rename" style="font-size:15px;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:var(--radius);border:2px solid transparent;transition:border-color 0.15s" onmouseenter="this.style.borderColor='var(--border)'" onmouseleave="this.style.borderColor='transparent'"></span>
+      <input id="book-title-input" class="hidden" style="font-size:15px;font-weight:700;border:2px solid var(--accent);border-radius:var(--radius);padding:4px 8px;text-align:center;width:240px" onblur="commitBookTitle()" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){cancelEditBookTitle()}" />
+    </div>
     <div class="header-right">
       <button class="btn btn-secondary btn-sm" onclick="showCharacterModal()">🧑‍🎨 Characters</button>
       <button class="btn btn-ghost btn-sm" onclick="showScreen('library')">← Library</button>
@@ -1114,9 +1118,37 @@ async function openBook(bookId) {
   currentBook = book;
 
   showScreen('book');
-  document.querySelector('#screen-book .app-header .logo').textContent = 'ComicSpark';
+  document.getElementById('book-title-display').textContent = book.title;
 
   await Promise.all([loadPages(), loadCharacters()]);
+}
+
+function startEditBookTitle() {
+  const display = document.getElementById('book-title-display');
+  const input   = document.getElementById('book-title-input');
+  input.value = currentBook.title;
+  display.classList.add('hidden');
+  input.classList.remove('hidden');
+  input.focus();
+  input.select();
+}
+
+function cancelEditBookTitle() {
+  document.getElementById('book-title-input').classList.add('hidden');
+  document.getElementById('book-title-display').classList.remove('hidden');
+}
+
+async function commitBookTitle() {
+  const input   = document.getElementById('book-title-input');
+  const display = document.getElementById('book-title-display');
+  const newTitle = input.value.trim();
+  if (!newTitle || newTitle === currentBook.title) { cancelEditBookTitle(); return; }
+  const { error } = await sb.from('books').update({ title: newTitle }).eq('id', currentBook.id);
+  if (error) { toast('Failed to rename book', 'error'); cancelEditBookTitle(); return; }
+  currentBook.title = newTitle;
+  display.textContent = newTitle;
+  cancelEditBookTitle();
+  toast('Book renamed', 'success');
 }
 
 // ═══════════════════════════════════════════════════
