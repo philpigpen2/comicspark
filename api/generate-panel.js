@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt, style, refined } = req.body;
+  const { prompt, style, refined, layout } = req.body;
 
   if (!prompt || !style) {
     return res.status(400).json({ error: 'prompt and style are required' });
@@ -17,6 +17,15 @@ export default async function handler(req, res) {
     cartoon: 'bright cartoon style, fun animated aesthetic, thick outlines, saturated cheerful colours, Cartoon Network inspired',
     realistic: 'photorealistic illustration, detailed rendering, cinematic lighting, highly detailed, professional concept art',
   };
+
+  // Map page layout to best DALL-E image size
+  const sizeMap = {
+    'splash': '1024x1792',   // full-page portrait (covers + splash pages)
+    'strip-3': '1792x1024',  // wide landscape (horizontal strip panels)
+    'grid-2x2': '1024x1024', // square grid panels
+    'duo': '1024x1024',      // side-by-side square panels
+  };
+  const size = sizeMap[layout] || '1024x1024';
 
   const stylePrompt = styleDescriptions[style] || style;
 
@@ -35,7 +44,7 @@ export default async function handler(req, res) {
         model: 'dall-e-3',
         prompt: fullPrompt,
         n: 1,
-        size: '1024x1024',
+        size,
         quality: 'standard',
       }),
     });
