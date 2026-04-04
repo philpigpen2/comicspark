@@ -844,6 +844,7 @@ let currentPanel = null;
 let currentPanelElements = [];
 let pendingElementType = null;
 let pendingElementText = null;
+let dragState = null;
 let currentPageLayout = 'strip-3';
 
 const ART_STYLES = [
@@ -1348,13 +1349,15 @@ function renderElements() {
 
 function renderSvgElements() {
   const svg = document.getElementById('panel-svg-overlay');
-  // Clear existing drawn elements (keep only defs if any)
   Array.from(svg.children).forEach(child => {
     if (child.tagName !== 'defs') child.remove();
   });
 
   currentPanelElements.forEach(el => {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.style.pointerEvents = 'all';
+    g.style.cursor = 'grab';
+
     const cx = el.x * 100;
     const cy = el.y * 100;
     const w = el.width * 100;
@@ -1366,6 +1369,11 @@ function renderSvgElements() {
     } else if (el.type === 'sfx') {
       renderSfx(svg, g, cx, cy, el.text);
     }
+
+    g.addEventListener('mousedown', e => { e.stopPropagation(); startElDrag(e, el); });
+    g.addEventListener('touchstart', e => { startElDrag(e.touches[0], el); }, { passive: true });
+    g.addEventListener('click', e => e.stopPropagation());
+
     svg.appendChild(g);
   });
 }
@@ -1522,6 +1530,49 @@ document.getElementById('panel-svg-overlay').addEventListener('click', async (e)
   cancelAddElement();
   toast('Element placed!', 'success');
 });
+
+// ── Drag to reposition elements ─────────────────────────────
+function startElDrag(e, el) {
+  if (pendingElementType) return;
+  const svg = document.getElementById('panel-svg-overlay');
+  const rect = svg.getBoundingClientRect();
+  dragState = {
+    el,
+    startNX: (e.clientX - rect.left) / rect.width,
+    startNY: (e.clientY - rect.top) / rect.height,
+    origX: el.x,
+    origY: el.y,
+    moved: false,
+  };
+}
+
+function moveDrag(e) {
+  if (!dragState) return;
+  const svg = document.getElementById('panel-svg-overlay');
+  const rect = svg.getBoundingClientRect();
+  const nx = (e.clientX - rect.left) / rect.width;
+  const ny = (e.clientY - rect.top) / rect.height;
+  const dx = nx - dragState.startNX;
+  const dy = ny - dragState.startNY;
+  if (Math.abs(dx) > 0.005 || Math.abs(dy) > 0.005) dragState.moved = true;
+  dragState.el.x = Math.max(0.02, Math.min(0.98, dragState.origX + dx));
+  dragState.el.y = Math.max(0.02, Math.min(0.98, dragState.origY + dy));
+  renderSvgElements();
+}
+
+async function endDrag() {
+  if (!dragState) return;
+  const state = dragState;
+  dragState = null;
+  if (state.moved) {
+    await sb.from('elements').update({ x: state.el.x, y: state.el.y }).eq('id', state.el.id);
+  }
+}
+
+document.addEventListener('mousemove', moveDrag);
+document.addEventListener('touchmove', e => moveDrag(e.touches[0]), { passive: true });
+document.addEventListener('mouseup', endDrag);
+document.addEventListener('touchend', endDrag);
 
 // Arm on Enter key
 document.getElementById('element-text-input').addEventListener('keydown', e => {
