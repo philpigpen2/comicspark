@@ -859,6 +859,7 @@
             <label>Refine prompt</label>
             <textarea id="refine-prompt" placeholder="Make it more dramatic, add rain..."></textarea>
             <button class="btn btn-secondary" style="justify-content:center" onclick="generatePanel(true)">🔄 Regenerate</button>
+            <button class="btn btn-ghost btn-sm" style="justify-content:center;color:var(--accent)" onclick="clearPanelImage()">🗑 Clear image</button>
           </div>
         </div>
 
@@ -1641,6 +1642,19 @@ async function savePanel() {
   } catch (err) {
     toast('Auto-save failed: ' + err.message, 'error');
   }
+}
+
+async function clearPanelImage() {
+  if (!currentPanel) return;
+  await sb.from('panels').update({ image_url: null, prompt: null }).eq('id', currentPanel.id);
+  currentPanel.image_url = null;
+  currentPanel.prompt = null;
+  currentPanel._tempImageUrl = null;
+  document.getElementById('panel-img').classList.add('hidden');
+  document.getElementById('panel-placeholder').classList.remove('hidden');
+  document.getElementById('generate-result').classList.add('hidden');
+  document.getElementById('refine-row').style.display = 'none';
+  document.getElementById('panel-prompt').value = '';
 }
 
 async function backToBook() {
