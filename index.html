@@ -40,6 +40,7 @@
 
     /* ── Utilities ─────────────────────────────────────── */
     .hidden { display: none !important; }
+    #refine-row:not(.hidden) { display: flex; }
     .btn {
       display: inline-flex;
       align-items: center;
@@ -866,7 +867,7 @@
             ⚡ Generate
           </button>
           <div id="generate-result" class="generate-result hidden"></div>
-          <div id="refine-row" class="hidden" style="display:flex;flex-direction:column;gap:8px">
+          <div id="refine-row" class="hidden" style="flex-direction:column;gap:8px">
             <label>Refine prompt</label>
             <textarea id="refine-prompt" placeholder="Make it more dramatic, add rain..."></textarea>
             <button class="btn btn-secondary" style="justify-content:center" onclick="generatePanel(true)">🔄 Regenerate</button>
@@ -1602,7 +1603,7 @@ async function openPanel(panel, position) {
   if (panel.image_url) {
     showPanelImage(panel.image_url);
     if (panel.prompt) document.getElementById('panel-prompt').value = panel.prompt;
-    document.getElementById('refine-row').style.display = 'flex';
+    document.getElementById('refine-row').classList.remove('hidden');
     document.getElementById('generate-result').classList.remove('hidden');
     document.getElementById('generate-result').innerHTML = `<strong>Current prompt:</strong>${escHtml(panel.prompt || '')}`;
   }
@@ -1615,7 +1616,7 @@ function resetPanelEditor() {
   const ratioMap = { 'splash': '9/16', 'strip-3': '16/9', 'grid-2x2': '1/1', 'duo': '1/1' };
   document.getElementById('panel-placeholder').style.aspectRatio = ratioMap[currentPage?.layout] || '1/1';
   document.getElementById('generate-result').classList.add('hidden');
-  document.getElementById('refine-row').style.display = 'none';
+  document.getElementById('refine-row').classList.add('hidden');
   document.getElementById('panel-prompt').value = '';
   document.getElementById('element-input-area').style.display = 'none';
   document.getElementById('element-input-area').classList.add('hidden');
@@ -1665,7 +1666,7 @@ async function generatePanel(refine = false) {
     showPanelImage(data.imageUrl);
     resultEl.innerHTML = '<span class="spinner" style="border-color:rgba(0,0,0,0.15);border-top-color:var(--accent)"></span> Saving...';
 
-    document.getElementById('refine-row').style.display = 'flex';
+    document.getElementById('refine-row').classList.remove('hidden');
 
     // Update panel prompt in DB
     await sb.from('panels').update({ prompt }).eq('id', currentPanel.id);
@@ -1715,7 +1716,7 @@ async function clearPanelImage() {
   document.getElementById('panel-img').classList.add('hidden');
   document.getElementById('panel-placeholder').classList.remove('hidden');
   document.getElementById('generate-result').classList.add('hidden');
-  document.getElementById('refine-row').style.display = 'none';
+  document.getElementById('refine-row').classList.add('hidden');
   document.getElementById('panel-prompt').value = '';
 }
 
