@@ -1350,15 +1350,25 @@ async function loadPages() {
   const { data: allPages, error } = await sb.from('pages').select('*').eq('book_id', currentBook.id).order('page_number');
   if (error) { toast('Failed to load pages', 'error'); return; }
 
-  // Fetch panels separately — more reliable than embedded FK query
+  // Fetch panels and elements in one pass
   const pageIds = allPages.map(p => p.id);
   const { data: allPanels } = pageIds.length > 0
     ? await sb.from('panels').select('*').in('page_id', pageIds)
     : { data: [] };
 
+  const panelIds = (allPanels || []).map(p => p.id);
+  const { data: allElements } = panelIds.length > 0
+    ? await sb.from('elements').select('*').in('panel_id', panelIds)
+    : { data: [] };
+
+  const panelsWithElements = (allPanels || []).map(p => ({
+    ...p,
+    elements: (allElements || []).filter(el => el.panel_id === p.id),
+  }));
+
   const pagesWithPanels = allPages.map(p => ({
     ...p,
-    panels: (allPanels || []).filter(panel => panel.page_id === p.id),
+    panels: panelsWithElements.filter(panel => panel.page_id === p.id),
   }));
 
   const pages = pagesWithPanels.filter(p => !p.cover_type);
