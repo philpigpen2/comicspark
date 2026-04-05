@@ -1646,10 +1646,15 @@ function showPanelImage(url) {
 }
 
 async function generatePanel(refine = false) {
-  const prompt = document.getElementById('panel-prompt').value.trim();
+  let prompt = document.getElementById('panel-prompt').value.trim();
+  // Fall back to saved prompt if textarea is empty (e.g. older panel with no cached prompt)
+  if (!prompt && currentPanel?.prompt) {
+    prompt = currentPanel.prompt;
+    document.getElementById('panel-prompt').value = prompt;
+  }
   const refined = refine ? document.getElementById('refine-prompt').value.trim() : null;
 
-  if (!prompt) { toast('Please describe the scene', 'error'); return; }
+  if (!prompt) { toast('Please describe the scene first', 'error'); return; }
 
   // Prepend character descriptions so DALL-E keeps them consistent
   let fullPrompt = prompt;
