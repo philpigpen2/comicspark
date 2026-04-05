@@ -1368,8 +1368,9 @@ async function openOrCreateCover(type) {
 function renderPageSidebar(pages) {
   const container = document.getElementById('page-thumbs');
   container.innerHTML = pages.map((p, i) => `
-    <div class="page-thumb ${currentPage && currentPage.id === p.id ? 'active' : ''}" onclick="openPageById('${p.id}')" id="thumb-${p.id}">
+    <div class="page-thumb ${currentPage && currentPage.id === p.id ? 'active' : ''}" onclick="openPageById('${p.id}')" id="thumb-${p.id}" style="position:relative">
       <span class="page-thumb-number">${i + 1}</span>
+      <button onclick="event.stopPropagation();deletePage('${p.id}')" title="Delete page" style="position:absolute;top:4px;right:4px;background:var(--accent);color:white;border:none;border-radius:3px;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2">×</button>
       <div class="page-thumb-panels layout-${p.layout}">
         ${(p.panels || []).slice(0, LAYOUT_PANEL_COUNT[p.layout] || 3).map(panel =>
           `<div class="mini-panel">${panel.image_url ? `<img src="${escHtml(panel.image_url)}" alt="" />` : ''}</div>`
@@ -1497,6 +1498,17 @@ async function changeLayout(layout) {
   currentPageLayout = layout;
   await loadPages();
   openPageById(currentPage.id);
+}
+
+async function deletePage(pageId) {
+  if (!confirm('Delete this page and all its panels?')) return;
+  const { error } = await sb.from('pages').delete().eq('id', pageId);
+  if (error) { toast('Failed to delete page', 'error'); return; }
+  if (currentPage && currentPage.id === pageId) {
+    currentPage = null;
+    clearCanvas();
+  }
+  await loadPages();
 }
 
 async function addPage() {
