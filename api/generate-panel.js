@@ -21,8 +21,8 @@ export default async function handler(req, res) {
   const stylePrompt = styleDescriptions[style] || style;
 
   const fullPrompt = refined
-    ? `${refined}. Art style: ${stylePrompt}. Comic book panel composition, single panel, no text, no speech bubbles, no captions.`
-    : `${prompt}. Art style: ${stylePrompt}. Comic book panel composition, single panel, no text, no speech bubbles, no captions.`;
+    ? `${refined}. Art style: ${stylePrompt}. Pure illustration only — absolutely no text, letters, words, speech bubbles, thought bubbles, caption boxes, dialogue, or any written elements of any kind anywhere in the image. Comic book panel artwork only.`
+    : `${prompt}. Art style: ${stylePrompt}. Pure illustration only — absolutely no text, letters, words, speech bubbles, thought bubbles, caption boxes, dialogue, or any written elements of any kind anywhere in the image. Comic book panel artwork only.`;
 
   // Map page layout to the correct DALL-E image size
   const sizeMap = {
