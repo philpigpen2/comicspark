@@ -907,6 +907,7 @@ let currentPanelElements = [];
 let pendingElementType = null;
 let pendingElementText = null;
 let dragState = null;
+let resizeDragState = null;
 let currentBookCharacters = [];
 let currentPageLayout = 'strip-3';
 
@@ -1682,6 +1683,24 @@ function renderSvgElements() {
     g.addEventListener('touchstart', e => { startElDrag(e.touches[0], el); }, { passive: true });
     g.addEventListener('click', e => e.stopPropagation());
 
+    // Resize handle (right-edge) for speech and caption
+    if (el.type === 'speech' || el.type === 'caption') {
+      const handleX = (el.x + el.width / 2) * 100;
+      const handleY = el.y * 100;
+      const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      handle.setAttribute('cx', handleX);
+      handle.setAttribute('cy', handleY);
+      handle.setAttribute('r', '2.2');
+      handle.setAttribute('fill', '#1a1a1a');
+      handle.setAttribute('stroke', 'white');
+      handle.setAttribute('stroke-width', '0.8');
+      handle.style.cursor = 'ew-resize';
+      handle.style.pointerEvents = 'all';
+      handle.addEventListener('mousedown', e => { e.stopPropagation(); startResizeDrag(e, el); });
+      handle.addEventListener('touchstart', e => { e.stopPropagation(); startResizeDrag(e.touches[0], el); }, { passive: true });
+      svg.appendChild(handle);
+    }
+
     svg.appendChild(g);
   });
 }
@@ -1934,10 +1953,39 @@ async function endDrag() {
   }
 }
 
-document.addEventListener('mousemove', moveDrag);
-document.addEventListener('touchmove', e => moveDrag(e.touches[0]), { passive: true });
-document.addEventListener('mouseup', endDrag);
-document.addEventListener('touchend', endDrag);
+document.addEventListener('mousemove', e => { moveDrag(e); moveResizeDrag(e); });
+document.addEventListener('touchmove', e => { moveDrag(e.touches[0]); moveResizeDrag(e.touches[0]); }, { passive: true });
+document.addEventListener('mouseup', () => { endDrag(); endResizeDrag(); });
+document.addEventListener('touchend', () => { endDrag(); endResizeDrag(); });
+
+function startResizeDrag(e, el) {
+  if (pendingElementType) return;
+  const svg = document.getElementById('panel-svg-overlay');
+  const rect = svg.getBoundingClientRect();
+  resizeDragState = {
+    el,
+    startNX: (e.clientX - rect.left) / rect.width,
+    origWidth: el.width,
+  };
+}
+
+function moveResizeDrag(e) {
+  if (!resizeDragState) return;
+  const svg = document.getElementById('panel-svg-overlay');
+  const rect = svg.getBoundingClientRect();
+  const nx = (e.clientX - rect.left) / rect.width;
+  const dx = nx - resizeDragState.startNX;
+  // dx is the change in right-edge position, so width changes by 2×dx (symmetric resize)
+  resizeDragState.el.width = Math.max(0.1, Math.min(0.95, resizeDragState.origWidth + dx * 2));
+  renderSvgElements();
+}
+
+async function endResizeDrag() {
+  if (!resizeDragState) return;
+  const state = resizeDragState;
+  resizeDragState = null;
+  await sb.from('elements').update({ width: state.el.width }).eq('id', state.el.id);
+}
 
 // Arm on Enter key
 document.getElementById('element-text-input').addEventListener('keydown', e => {
