@@ -370,12 +370,14 @@
       padding: 8px;
       cursor: pointer;
       transition: border-color 0.15s;
-      aspect-ratio: 3/4;
+      aspect-ratio: 2/3;
       display: flex;
       flex-direction: column;
       gap: 4px;
       position: relative;
     }
+    .page-thumb.layout-grid-2x2 { aspect-ratio: 1/1; }
+    .page-thumb.layout-duo { aspect-ratio: 2/1; }
     .page-thumb:hover { border-color: var(--muted); }
     .page-thumb.active { border-color: var(--accent); }
     .page-thumb-number {
@@ -509,19 +511,17 @@
     }
     .panel-image-wrapper {
       position: relative;
-      max-width: 100%;
-      max-height: 100%;
+      /* aspect-ratio and height set dynamically in resetPanelEditor */
     }
     #panel-img {
       display: block;
-      max-width: min(600px, 100%);
-      max-height: calc(100vh - 120px);
-      border-radius: 4px;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .panel-placeholder-large {
-      width: 500px;
-      max-width: 90vw;
-      aspect-ratio: 1;
+      width: 100%;
+      height: 100%;
       background: var(--panel);
       border-radius: var(--radius-lg);
       display: flex;
@@ -1435,7 +1435,7 @@ async function openOrCreateCover(type) {
 function renderPageSidebar(pages) {
   const container = document.getElementById('page-thumbs');
   container.innerHTML = pages.map((p, i) => `
-    <div class="page-thumb ${currentPage && currentPage.id === p.id ? 'active' : ''}" onclick="openPageById('${p.id}')" id="thumb-${p.id}" style="position:relative">
+    <div class="page-thumb layout-${p.layout} ${currentPage && currentPage.id === p.id ? 'active' : ''}" onclick="openPageById('${p.id}')" id="thumb-${p.id}" style="position:relative">
       <span class="page-thumb-number">${i + 1}</span>
       <button onclick="event.stopPropagation();deletePage('${p.id}')" title="Delete page" style="position:absolute;top:4px;right:4px;background:var(--accent);color:white;border:none;border-radius:3px;width:18px;height:18px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2">×</button>
       <div class="page-thumb-panels layout-${p.layout}">
@@ -1638,9 +1638,18 @@ async function openPanel(panel, position) {
 function resetPanelEditor() {
   document.getElementById('panel-img').classList.add('hidden');
   document.getElementById('panel-placeholder').classList.remove('hidden');
-  // Match placeholder aspect ratio to the page layout
-  const ratioMap = { 'splash': '9/16', 'strip-3': '16/9', 'grid-2x2': '1/1', 'duo': '1/1' };
-  document.getElementById('panel-placeholder').style.aspectRatio = ratioMap[currentPage?.layout] || '1/1';
+  // Panel aspect ratios match book-view panel slots (page-canvas layout)
+  // strip-3: 2/3 page with 3 rows → each panel ≈ 2:1
+  // grid-2x2: 1/1 page with 2×2 → each panel ≈ 1:1
+  // splash: full 2/3 page → 2:3
+  // duo: 2/1 page with 2 cols → each panel ≈ 1:1
+  const panelRatioMap = { 'splash': '2/3', 'strip-3': '2/1', 'grid-2x2': '1/1', 'duo': '1/1' };
+  const ratio = panelRatioMap[currentPage?.layout] || '2/1';
+  const wrapper = document.getElementById('panel-image-wrapper');
+  wrapper.style.aspectRatio = ratio;
+  wrapper.style.height = 'min(65vh, 500px)';
+  wrapper.style.width = 'auto';
+  document.getElementById('panel-placeholder').style.aspectRatio = ratio;
   document.getElementById('generate-result').classList.add('hidden');
   document.getElementById('refine-row').classList.add('hidden');
   document.getElementById('panel-prompt').value = '';
@@ -2050,7 +2059,7 @@ document.getElementById('panel-svg-overlay').addEventListener('click', async (e)
     type: pendingElementType,
     text: pendingElementText,
     x, y,
-    width: 0.3,
+    width: 0.15,
   }).select().single();
 
   if (error) { toast('Failed to place element', 'error'); return; }
