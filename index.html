@@ -1789,20 +1789,33 @@ function renderElements() {
   renderSvgElements();
 }
 
+function getSvgViewBox() {
+  // Compute a viewBox where 1 unit = same physical size in x and y
+  // so shapes are not distorted on non-square panels
+  const svg = document.getElementById('panel-svg-overlay');
+  const rect = svg.getBoundingClientRect();
+  const vbW = 100;
+  const vbH = rect.width > 0 ? vbW * rect.height / rect.width : 100;
+  return { vbW, vbH };
+}
+
 function renderSvgElements() {
   const svg = document.getElementById('panel-svg-overlay');
   Array.from(svg.children).forEach(child => {
     if (child.tagName !== 'defs') child.remove();
   });
 
+  const { vbW, vbH } = getSvgViewBox();
+  svg.setAttribute('viewBox', `0 0 ${vbW} ${vbH}`);
+
   currentPanelElements.forEach(el => {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.style.pointerEvents = 'all';
     g.style.cursor = 'grab';
 
-    const cx = el.x * 100;
-    const cy = el.y * 100;
-    const w = el.width * 100;
+    const cx = el.x * vbW;
+    const cy = el.y * vbH;
+    const w = el.width * vbW;
 
     if (el.type === 'speech') {
       renderSpeechBubble(svg, g, cx, cy, w, el.text);
@@ -1818,8 +1831,8 @@ function renderSvgElements() {
 
     // Resize handle (right-edge) for speech and caption
     if (el.type === 'speech' || el.type === 'caption') {
-      const handleX = (el.x + el.width / 2) * 100;
-      const handleY = el.y * 100;
+      const handleX = (el.x + el.width / 2) * vbW;
+      const handleY = el.y * vbH;
       const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       handle.setAttribute('cx', handleX);
       handle.setAttribute('cy', handleY);
