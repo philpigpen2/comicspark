@@ -850,7 +850,7 @@
           <p>Generate artwork using the panel controls</p>
         </div>
         <img id="panel-img" class="hidden" alt="Panel artwork" />
-        <svg id="panel-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+        <svg id="panel-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
       </div>
     </div>
 
@@ -927,6 +927,7 @@ let dragState = null;
 let resizeDragState = null;
 let currentBookCharacters = [];
 let currentPageLayout = 'strip-3';
+let currentBookPages = [];
 
 const ART_STYLES = [
   { id: 'manga',   emoji: '⛩️',  name: 'Manga',          desc: 'Black & white, Japanese comic style with expressive characters' },
@@ -1372,6 +1373,7 @@ async function loadPages() {
   }));
 
   const pages = pagesWithPanels.filter(p => !p.cover_type);
+  currentBookPages = pages;
   const frontCover = pagesWithPanels.find(p => p.cover_type === 'front');
   const backCover  = pagesWithPanels.find(p => p.cover_type === 'back');
 
@@ -1500,8 +1502,9 @@ function renderPageCanvas(page) {
   const hdr = document.createElement('div');
   hdr.className = 'book-canvas-header';
   const coverLabel = page.cover_type === 'front' ? 'Front Cover' : page.cover_type === 'back' ? 'Back Cover' : null;
+  const displayPageNum = coverLabel ? null : (currentBookPages.findIndex(p => p.id === page.id) + 1) || page.page_number;
   hdr.innerHTML = `
-    <h2>${escHtml(currentBook.title)} — ${coverLabel || `Page ${page.page_number}`}</h2>
+    <h2>${escHtml(currentBook.title)} — ${coverLabel || `Page ${displayPageNum}`}</h2>
     ${coverLabel ? '' : `<div class="layout-picker">
       <label>Layout:</label>
       <select onchange="changeLayout(this.value)">
