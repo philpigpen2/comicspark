@@ -774,16 +774,18 @@
             Generating character preview...
           </div>
           <img id="char-preview-img" class="hidden" style="width:100%;display:block" alt="Character preview" />
-          <div id="char-image-actions" class="hidden" style="padding:8px;display:flex;gap:6px;border-top:2px solid var(--border)">
-            <button class="btn btn-primary btn-sm" onclick="addCharacter()" style="flex:1;justify-content:center">✓ Save Character</button>
-            <button class="btn btn-secondary btn-sm" onclick="regenerateCharacterImage()" style="justify-content:center">🔄 Regenerate</button>
-          </div>
         </div>
 
         <div style="padding:10px 16px;border-top:2px solid var(--border);display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;gap:8px">
+          <!-- Chat input row — hidden once image is ready -->
+          <div id="char-chat-row" style="display:flex;gap:8px">
             <input id="char-chat-input" placeholder="Type your reply..." style="flex:1;font-size:14px" onkeydown="if(event.key==='Enter')sendCharChat()" />
             <button class="btn btn-primary btn-sm" onclick="sendCharChat()">Send</button>
+          </div>
+          <!-- Image action row — shown once image is ready -->
+          <div id="char-image-actions" class="hidden" style="display:flex;gap:6px">
+            <button class="btn btn-primary" onclick="addCharacter()" style="flex:1;justify-content:center">✓ Save Character</button>
+            <button class="btn btn-secondary btn-sm" onclick="regenerateCharacterImage()">🔄</button>
           </div>
           <div style="display:flex;justify-content:flex-end">
             <button onclick="cancelCharacterDesign()" style="background:none;border:none;font-size:12px;color:var(--muted);cursor:pointer">← Back</button>
@@ -1211,6 +1213,7 @@ function startCharacterDesign() {
   document.getElementById('char-preview-img').classList.add('hidden');
   document.getElementById('char-image-actions').classList.add('hidden');
   document.getElementById('char-image-loading').classList.remove('hidden');
+  document.getElementById('char-chat-row').style.display = 'flex';
 
   const messages = document.getElementById('char-chat-messages');
   messages.innerHTML = '';
@@ -1279,6 +1282,7 @@ async function generateCharacterImage() {
   document.getElementById('char-image-preview').classList.remove('hidden');
   document.getElementById('char-image-loading').classList.remove('hidden');
   document.getElementById('char-preview-img').classList.add('hidden');
+  document.getElementById('char-chat-row').style.display = 'none';
   document.getElementById('char-image-actions').classList.add('hidden');
 
   try {
@@ -1296,7 +1300,7 @@ async function generateCharacterImage() {
     document.getElementById('char-image-loading').classList.add('hidden');
     document.getElementById('char-image-actions').classList.remove('hidden');
   } catch (err) {
-    document.getElementById('char-image-loading').innerHTML = `<span style="color:var(--accent);font-size:12px">Preview failed — you can still save without it.</span>`;
+    document.getElementById('char-image-loading').innerHTML = `<span style="color:var(--accent);font-size:12px">Preview failed — you can still save.</span>`;
     document.getElementById('char-image-actions').classList.remove('hidden');
   }
 }
